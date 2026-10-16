@@ -1,0 +1,1011 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Overhead</title>
+<meta name="description" content="Satellite passes over you, with a nudge before each one.">
+<meta name="theme-color" content="#0F1528">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Overhead">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;500;600&family=Newsreader:ital,opsz,wght@1,6..72,400&display=swap">
+<style>
+:root {
+  --bg: #0F1528;
+  --raise: #161E37;
+  --raise-2: #1D2645;
+  --line: rgba(205, 214, 245, .09);
+  --line-2: rgba(205, 214, 245, .17);
+  --ink: #ECE8DF;
+  --ink-2: #A3ABC2;
+  --ink-3: #6E7794;
+  --sun: #F2C063;
+  --sun-soft: rgba(242, 192, 99, .17);
+  --on-sun: #1D1505;
+  --dome-in: #0A0F21;
+  --dome-out: #1A2448;
+  --sans: "Hanken Grotesk", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --serif: "Newsreader", Georgia, "Times New Roman", serif;
+  color-scheme: dark;
+}
+:root[data-night] {
+  --bg: #0C0404;
+  --raise: #160707;
+  --raise-2: #1F0A0A;
+  --line: rgba(255, 90, 70, .12);
+  --line-2: rgba(255, 90, 70, .22);
+  --ink: #E2573F;
+  --ink-2: #A9412F;
+  --ink-3: #74291F;
+  --sun: #FF5B3D;
+  --sun-soft: rgba(255, 91, 61, .18);
+  --on-sun: #1A0503;
+  --dome-in: #070202;
+  --dome-out: #1E0808;
+}
+* { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font: 400 16px/1.45 var(--sans);
+  -webkit-font-smoothing: antialiased;
+  padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+  min-height: 100vh;
+}
+button, input { font: inherit; color: inherit; }
+button { background: none; border: 0; padding: 0; cursor: pointer; -webkit-tap-highlight-color: transparent; }
+a { color: inherit; }
+:focus-visible { outline: 2px solid var(--sun); outline-offset: 2px; border-radius: 8px; }
+.num { font-variant-numeric: tabular-nums; }
+.wrap { max-width: 34rem; margin: 0 auto; padding: 0 20px 48px; }
+
+/* Header */
+header { display: flex; align-items: center; justify-content: space-between; padding: 18px 0 6px; }
+.mark { font-weight: 600; font-size: 17px; letter-spacing: -.01em; }
+.where { display: block; font-size: 13px; color: var(--ink-3); margin-top: 1px; }
+.where:empty { display: none; }
+.tools { display: flex; gap: 4px; margin-right: -8px; }
+.icon-btn { width: 44px; height: 44px; border-radius: 50%; display: grid; place-items: center; color: var(--ink-2); }
+.icon-btn:active { background: var(--raise); }
+.icon-btn svg { width: 22px; height: 22px; }
+.icon-btn[aria-pressed="true"] { color: var(--sun); }
+
+/* Notices */
+.notice { display: flex; gap: 12px; align-items: center; margin: 10px 0 0; padding: 10px 12px 10px 14px; border-radius: 14px; background: var(--raise); font-size: 14px; color: var(--ink-2); }
+.notice p { margin: 0; flex: 1; }
+.notice .link-btn { color: var(--sun); font-weight: 600; white-space: nowrap; }
+.notice .x { color: var(--ink-3); width: 32px; height: 32px; display: grid; place-items: center; border-radius: 50%; }
+.notice .x svg { width: 16px; height: 16px; }
+
+/* Hero */
+.hero { padding: 8px 0 28px; }
+.dome { display: block; width: min(100%, 320px); height: auto; margin: 8px auto 20px; overflow: visible; }
+.dome .ring { fill: none; stroke: var(--line); stroke-dasharray: 1 3; }
+.dome .rim { stroke: var(--line-2); }
+.dome text { fill: var(--ink-3); font: 500 8.5px var(--sans); text-anchor: middle; dominant-baseline: central; }
+.dome .ghost { fill: none; stroke: var(--ink-3); stroke-width: 1.2; stroke-dasharray: 2 3; stroke-linecap: round; }
+.dome .lit { fill: none; stroke: var(--sun); stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; }
+.dome .dot { fill: var(--sun); }
+.dome .halo { fill: var(--sun-soft); }
+.dome .faint-dot { fill: var(--ink-3); }
+.dome .now { fill: var(--ink); }
+.dome .now-ring { fill: none; stroke: var(--ink); stroke-width: 1; transform-box: fill-box; transform-origin: center; animation: ping 2s ease-out infinite; }
+@keyframes ping { from { opacity: .7; transform: scale(1); } to { opacity: 0; transform: scale(2.6); } }
+
+.title-row { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
+.sat-name { margin: 0; font-size: 26px; line-height: 1.15; font-weight: 600; letter-spacing: -.015em; }
+.when { margin: 4px 0 0; font-size: 15px; color: var(--ink-2); }
+.when strong { color: var(--ink); font-weight: 500; }
+.story { margin: 14px 0 0; font: italic 400 19px/1.42 var(--serif); color: var(--ink); max-width: 30em; }
+.facts { margin: 10px 0 0; font-size: 14px; color: var(--ink-2); }
+.empty-title { margin: 0; font-size: 22px; font-weight: 600; letter-spacing: -.01em; }
+.empty-body { margin: 8px 0 0; color: var(--ink-2); max-width: 28em; }
+.actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 18px; }
+.btn { height: 44px; padding: 0 18px; border-radius: 22px; background: var(--raise-2); font-weight: 600; font-size: 15px; display: inline-flex; align-items: center; gap: 8px; text-decoration: none; }
+.btn.primary { background: var(--sun); color: var(--on-sun); }
+.btn:disabled { opacity: .5; cursor: default; }
+.link-btn { color: var(--ink-2); font-size: 14px; text-decoration: underline; text-underline-offset: 3px; text-decoration-color: var(--line-2); }
+
+/* Bell */
+.bell { flex: none; width: 44px; height: 44px; border-radius: 50%; display: grid; place-items: center; color: var(--ink-3); transition: color .2s, background .2s; }
+.bell svg { width: 22px; height: 22px; }
+.bell .on { display: none; }
+.bell[aria-pressed="true"] { color: var(--sun); background: var(--sun-soft); }
+.bell[aria-pressed="true"] .on { display: block; }
+.bell[aria-pressed="true"] .off { display: none; }
+.bell.busy { opacity: .5; }
+.bell[aria-pressed="true"] svg { animation: nod .5s ease; }
+@keyframes nod { 30% { transform: rotate(-14deg); } 60% { transform: rotate(10deg); } }
+
+/* Mode switch */
+.switcher { display: inline-flex; padding: 3px; border-radius: 22px; background: var(--raise); margin: 0 0 6px; }
+.switcher button { height: 34px; padding: 0 16px; border-radius: 18px; font-size: 14px; font-weight: 500; color: var(--ink-2); }
+.switcher button[aria-pressed="true"] { background: var(--raise-2); color: var(--ink); }
+
+/* List */
+.day { margin: 22px 0 2px; font-size: 14px; font-weight: 500; color: var(--ink-3); }
+.pass { border-bottom: 1px solid var(--line); }
+.pass-row { display: flex; align-items: center; gap: 6px; }
+.pass-main { flex: 1; display: grid; grid-template-columns: minmax(3.6rem, max-content) 1fr; column-gap: 12px; align-items: baseline; text-align: left; padding: 14px 0; min-width: 0; }
+.pass-time { font-size: 19px; font-weight: 500; letter-spacing: -.01em; white-space: nowrap; }
+.pass-name { font-weight: 600; }
+.pass-sub { grid-column: 2; font-size: 13.5px; color: var(--ink-2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.pass.dim .pass-time, .pass.dim .pass-name { color: var(--ink-2); }
+.pass-detail { padding: 0 0 20px; }
+.pass-detail .dome { width: min(100%, 230px); margin: 4px auto 14px; }
+.pass-detail .story { font-size: 17px; margin-top: 0; }
+.pass-detail .actions { margin-top: 12px; }
+.pass-detail .btn { height: 38px; font-size: 14px; padding: 0 14px; }
+.foot { margin-top: 36px; font-size: 12.5px; color: var(--ink-3); }
+.foot a { color: var(--ink-3); }
+
+/* Sheets */
+dialog.sheet {
+  position: fixed; inset: auto 0 0 0; margin: 0 auto; width: 100%; max-width: 34rem; max-height: 88vh;
+  border: 0; border-radius: 22px 22px 0 0; padding: 0; background: var(--raise); color: var(--ink);
+  overflow: auto; overscroll-behavior: contain;
+}
+dialog.sheet[open] { animation: rise .28s cubic-bezier(.2, .8, .2, 1); }
+dialog.sheet::backdrop { background: rgba(4, 6, 14, .62); }
+@keyframes rise { from { transform: translateY(40px); opacity: 0; } }
+.sheet-in { padding: 10px 22px calc(28px + env(safe-area-inset-bottom)); }
+.grabber { width: 36px; height: 4px; border-radius: 2px; background: var(--line-2); margin: 0 auto 10px; }
+.sheet-head { display: flex; align-items: center; justify-content: space-between; }
+.sheet-head h2 { margin: 0; font-size: 20px; font-weight: 600; letter-spacing: -.01em; }
+.sheet h3 { margin: 26px 0 8px; font-size: 15px; font-weight: 600; }
+.sheet p { margin: 6px 0; color: var(--ink-2); font-size: 15px; }
+.sheet .small { font-size: 13.5px; color: var(--ink-3); }
+.steps { list-style: none; counter-reset: s; padding: 0; margin: 18px 0 0; }
+.steps li { counter-increment: s; position: relative; padding: 0 0 18px 40px; color: var(--ink-2); font-size: 15px; }
+.steps li::before { content: counter(s); position: absolute; left: 0; top: -1px; width: 26px; height: 26px; border-radius: 50%; background: var(--raise-2); color: var(--ink); font-size: 13px; font-weight: 600; display: grid; place-items: center; }
+.steps li strong { display: block; color: var(--ink); font-weight: 600; margin-bottom: 6px; }
+.steps .btn { height: 38px; font-size: 14px; padding: 0 14px; margin-top: 2px; }
+.code { display: inline-block; margin-top: 8px; padding: 6px 10px; border-radius: 8px; background: var(--bg); color: var(--ink); font-size: 14px; letter-spacing: .02em; word-break: break-all; user-select: all; }
+.chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.chip { height: 36px; padding: 0 14px; border-radius: 18px; background: var(--raise-2); font-size: 14px; font-weight: 500; color: var(--ink-2); }
+.chip[aria-pressed="true"] { background: var(--sun); color: var(--on-sun); }
+.list { margin: 0; padding: 0; list-style: none; }
+.list li { display: flex; align-items: center; justify-content: space-between; gap: 10px; min-height: 48px; border-bottom: 1px solid var(--line); }
+.list li span small { display: block; color: var(--ink-3); font-size: 12.5px; }
+.list .mini { color: var(--ink-2); font-size: 14px; font-weight: 600; padding: 8px 2px; }
+.field-row { display: flex; gap: 8px; margin-top: 10px; }
+.field { flex: 1; min-width: 0; height: 44px; border-radius: 12px; border: 1px solid var(--line-2); background: var(--bg); padding: 0 12px; font-size: 16px; }
+.field::placeholder { color: var(--ink-3); }
+.toggle-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.switch { width: 50px; height: 30px; border-radius: 15px; background: var(--raise-2); position: relative; flex: none; transition: background .2s; }
+.switch::after { content: ""; position: absolute; top: 3px; left: 3px; width: 24px; height: 24px; border-radius: 50%; background: var(--ink-2); transition: transform .2s, background .2s; }
+.switch[aria-checked="true"] { background: var(--sun); }
+.switch[aria-checked="true"]::after { transform: translateX(20px); background: var(--on-sun); }
+
+/* Toast */
+.toast { position: fixed; left: 50%; bottom: calc(24px + env(safe-area-inset-bottom)); transform: translate(-50%, 20px); opacity: 0; pointer-events: none;
+  background: var(--ink); color: var(--bg); padding: 10px 18px; border-radius: 22px; font-size: 14px; font-weight: 500; transition: opacity .2s, transform .2s; max-width: calc(100% - 40px); text-align: center; z-index: 10; }
+.toast.show { opacity: 1; transform: translate(-50%, 0); }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation: none !important; transition: none !important; }
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div>
+      <div class="mark">Overhead</div>
+      <button class="where num" id="where" type="button"></button>
+    </div>
+    <div class="tools">
+      <button class="icon-btn" id="nightBtn" type="button" aria-pressed="false" aria-label="Night vision">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M2.5 12s3.5-6 9.5-6 9.5 6 9.5 6-3.5 6-9.5 6-9.5-6-9.5-6Z"/><circle cx="12" cy="12" r="2.6" fill="currentColor" stroke="none"/></svg>
+      </button>
+      <button class="icon-btn" id="settingsBtn" type="button" aria-label="Settings">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M4 7h10M18 7h2M4 17h2M10 17h10"/><circle cx="16" cy="7" r="2"/><circle cx="8" cy="17" r="2"/></svg>
+      </button>
+    </div>
+  </header>
+  <div id="notices"></div>
+  <main>
+    <section class="hero" id="hero" aria-live="polite"></section>
+    <div id="switchWrap"></div>
+    <div id="list"></div>
+  </main>
+  <p class="foot">Orbits from <a href="https://celestrak.org" target="_blank" rel="noopener">CelesTrak</a>. Alerts by <a href="https://ntfy.sh" target="_blank" rel="noopener">ntfy</a>. Times are for your location and may drift a little for passes more than a day away.</p>
+</div>
+
+<dialog class="sheet" id="sheet" aria-labelledby="sheetTitle"><div class="sheet-in" id="sheetBody"></div></dialog>
+<div class="toast" id="toast" role="status"></div>
+
+<script src="core.js"></script>
+<script>
+(() => {
+'use strict';
+const O = window.Orbit;
+
+/* ---------- Constants ---------- */
+const NTFY = 'https://ntfy.sh';
+const CELESTRAK = 'https://celestrak.org/NORAD/elements/gp.php';
+const TLE_API = 'https://tle.ivanstanojevic.me/api/tle/';
+const PLAY = 'https://play.google.com/store/apps/details?id=io.heckel.ntfy';
+const APPSTORE = 'https://apps.apple.com/app/ntfy/id1625396347';
+const DEFAULT_SATS = [{ id: '25544', name: 'ISS' }, { id: '48274', name: 'Tiangong' }];
+const FRIENDLY = { '25544': 'ISS', '48274': 'Tiangong', '20580': 'Hubble' };
+const HOURS = 72;
+const ELEMENT_TTL = 12 * 3600e3;
+const MIN = 60e3;
+
+const UA = navigator.userAgent;
+const isIOS = /iP(hone|ad|od)/.test(UA) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+const isAndroid = /Android/.test(UA);
+const standalone = matchMedia('(display-mode: standalone)').matches || navigator.standalone === true;
+
+/* ---------- Storage ---------- */
+const get = (k, d) => { try { const v = localStorage.getItem('ovh.' + k); return v == null ? d : JSON.parse(v); } catch { return d; } };
+const put = (k, v) => { try { localStorage.setItem('ovh.' + k, JSON.stringify(v)); } catch {} };
+
+const S = {
+  loc: get('loc', null),
+  sats: get('sats', DEFAULT_SATS),
+  els: get('els', {}),
+  set: Object.assign({ lead: 10, minPeak: 10, mode: 'visible', night: false }, get('settings', {})),
+  topic: get('topic', null),
+  connected: get('connected', false),
+  alerts: get('alerts', {}),
+  recs: {},
+  passes: [],
+  computedAt: 0,
+  open: null,
+  loading: false,
+  fetchFailed: false,
+  paths: new Map(),
+  installEvt: null,
+};
+const saveSet = () => put('settings', S.set);
+
+/* ---------- Helpers ---------- */
+const $ = (s, el = document) => el.querySelector(s);
+const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const r0 = (x) => Math.round(x);
+const h12 = new Intl.DateTimeFormat(undefined, { hour: 'numeric' }).resolvedOptions().hour12;
+const tfmt = new Intl.DateTimeFormat(undefined, { hour: h12 ? 'numeric' : '2-digit', minute: '2-digit' });
+const time = (ms) => tfmt.format(ms);
+const dayKey = (ms) => { const d = new Date(ms); return d.getFullYear() * 1e4 + d.getMonth() * 100 + d.getDate(); };
+function dayWord(ms) {
+  const k = dayKey(ms), now = Date.now();
+  if (k === dayKey(now)) return 'Today';
+  if (k === dayKey(now + 864e5)) return 'Tomorrow';
+  return new Date(ms).toLocaleDateString(undefined, { weekday: 'long', day: 'numeric', month: 'long' });
+}
+function until(ms) {
+  const d = ms - Date.now();
+  if (d <= 0) return 'now';
+  if (d < MIN) return 'in under a minute';
+  const m = Math.round(d / MIN);
+  if (m < 60) return `in ${m} min`;
+  const h = Math.floor(m / 60), mm = m % 60;
+  if (h < 24) return mm ? `in ${h} h ${mm} min` : `in ${h} h`;
+  const dd = Math.floor(h / 24), hh = h % 24;
+  return `in ${dd} day${dd > 1 ? 's' : ''}${hh ? ` ${hh} h` : ''}`;
+}
+function ago(ms) {
+  const m = Math.round((Date.now() - ms) / MIN);
+  if (m < 2) return 'just now';
+  if (m < 60) return `${m} min ago`;
+  const h = Math.round(m / 60);
+  if (h < 48) return `${h} h ago`;
+  return `${Math.round(h / 24)} days ago`;
+}
+const magTxt = (m) => (m < 0 ? '−' : '') + Math.abs(m).toFixed(1);
+function brightWord(m) {
+  if (m == null) return '';
+  if (m <= -2.5) return 'Very bright';
+  if (m <= -0.5) return 'Bright';
+  if (m <= 1.5) return 'Easy to spot';
+  if (m <= 3) return 'Faint';
+  return 'Very faint';
+}
+const coordTxt = (l) => `${Math.abs(l.lat).toFixed(2)}°${l.lat >= 0 ? 'N' : 'S'}  ${Math.abs(l.lon).toFixed(2)}°${l.lon >= 0 ? 'E' : 'W'}`;
+const friendly = (id, name) => FRIENDLY[id] || name;
+
+let toastTimer;
+function toast(msg) {
+  const t = $('#toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove('show'), 2800);
+}
+
+const ICON = {
+  bellOff: '<svg class="off" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M6 10a6 6 0 1 1 12 0c0 4.5 1.5 6 2 7H4c.5-1 2-2.5 2-7Z"/><path d="M10 20a2.2 2.2 0 0 0 4 0"/></svg>',
+  bellOn: '<svg class="on" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M6 10a6 6 0 1 1 12 0c0 4.5 1.5 6 2 7H4c.5-1 2-2.5 2-7Z"/><path d="M10 20a2.2 2.2 0 0 0 4 0" fill="none"/></svg>',
+  x: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M6 6l12 12M18 6 6 18"/></svg>',
+};
+
+/* ---------- Orbit data ---------- */
+function buildRecs() {
+  S.recs = {};
+  for (const sat of S.sats) {
+    const e = S.els[sat.id];
+    if (!e) continue;
+    try {
+      const el = e.omm ? O.fromOMM(e.omm) : O.fromTLE(e.tle[0], e.tle[1], e.tle[2]);
+      const rec = O.init(el);
+      rec.name = friendly(sat.id, sat.name || el.name);
+      S.recs[sat.id] = rec;
+    } catch (err) { /* skip bad element set */ }
+  }
+}
+
+async function fetchElements(id) {
+  try {
+    const r = await fetch(`${CELESTRAK}?CATNR=${encodeURIComponent(id)}&FORMAT=JSON`, { cache: 'no-store' });
+    if (r.ok) { const j = await r.json(); if (Array.isArray(j) && j[0]) return { omm: j[0], at: Date.now() }; }
+  } catch {}
+  try {
+    const r = await fetch(TLE_API + encodeURIComponent(id), { cache: 'no-store' });
+    if (r.ok) { const j = await r.json(); if (j.line1 && j.line2) return { tle: [j.name, j.line1, j.line2], at: Date.now() }; }
+  } catch {}
+  return null;
+}
+
+async function refreshElements(force) {
+  const due = S.sats.filter((s) => force || !S.els[s.id] || Date.now() - S.els[s.id].at > ELEMENT_TTL);
+  if (!due.length) return true;
+  S.loading = !Object.keys(S.recs).length;
+  if (S.loading) render();
+  const got = await Promise.all(due.map((s) => fetchElements(s.id)));
+  let ok = true;
+  due.forEach((s, i) => { if (got[i]) S.els[s.id] = got[i]; else ok = false; });
+  put('els', S.els);
+  S.loading = false;
+  S.fetchFailed = !ok;
+  buildRecs();
+  compute();
+  return ok;
+}
+
+const oldestData = () => {
+  const ats = S.sats.map((s) => S.els[s.id] && S.els[s.id].at).filter(Boolean);
+  return ats.length ? Math.min(...ats) : 0;
+};
+
+/* ---------- Passes ---------- */
+const alertWin = (p) => p.visible || p.all;
+const shown = (p) => (S.set.mode === 'visible' ? p.visible : p.all);
+const passKey = (p) => `${p.satId}-${Math.round(alertWin(p).start / MIN)}`;
+
+function obs() { return O.observer(S.loc.lat, S.loc.lon, (S.loc.h || 0) / 1000); }
+
+function compute() {
+  if (!S.loc) { S.passes = []; render(); return; }
+  const o = obs(), now = Date.now();
+  const out = [];
+  for (const id in S.recs) {
+    const rec = S.recs[id];
+    for (const p of O.findPasses(rec, o, now - 20 * MIN, now + HOURS * 3600e3)) {
+      p.name = rec.name;
+      out.push(p);
+    }
+  }
+  S.passes = out;
+  S.paths.clear();
+  S.computedAt = now;
+  render();
+}
+
+function visibleList() {
+  const now = Date.now();
+  return S.passes
+    .filter((p) => { const w = shown(p); return w && w.end > now && w.max.el >= S.set.minPeak; })
+    .sort((a, b) => shown(a).start - shown(b).start);
+}
+
+function pathFor(p) {
+  const k = passKey(p);
+  if (!S.paths.has(k)) S.paths.set(k, O.path(S.recs[p.satId], obs(), p));
+  return S.paths.get(k);
+}
+
+/* ---------- Words ---------- */
+function story(p) {
+  const w = (az) => O.compassWords(az);
+  const v = p.visible;
+  if (!v) {
+    const a = p.all;
+    const why = p.why === 'daylight' ? 'It passes in daylight, so you won’t see it.' : 'It stays in Earth’s shadow, so you won’t see it.';
+    return `Rises in the ${w(a.startAz)} at ${time(a.start)}, reaches ${r0(a.max.el)}° in the ${w(a.max.az)} and sets in the ${w(a.endAz)} at ${time(a.end)}. ${why}`;
+  }
+  const up = v.startEl >= 25 ? `, ${r0(v.startEl)}° up,` : '';
+  let s = `Look ${w(v.startAz)}${up} at ${time(v.start)}`;
+  s += p.startReason === 'shadow' ? ', as it comes out of Earth’s shadow. ' : '. ';
+  const climbs = v.max.t - v.start > 20e3 && v.end - v.max.t > 20e3;
+  const middle = climbs ? (v.max.el >= 75 ? 'It passes almost overhead' : `It climbs to ${r0(v.max.el)}° in the ${w(v.max.az)}`) : 'It';
+  const ending = p.endReason === 'shadow' ? `fades into Earth’s shadow in the ${w(v.endAz)} at ${time(v.end)}`
+    : p.endReason === 'sky' ? `is lost in the brightening sky in the ${w(v.endAz)} at ${time(v.end)}`
+    : `sinks into the ${w(v.endAz)} at ${time(v.end)}`;
+  return s + middle + (climbs ? ' and ' : ' ') + ending + '.';
+}
+
+function facts(p) {
+  const v = p.visible;
+  if (!v) return `${Math.round((p.all.end - p.all.start) / MIN)} min above 10°`;
+  const bits = [];
+  if (v.mag != null) bits.push(`${brightWord(v.mag)}, about ${magTxt(v.mag)} magnitude`);
+  bits.push(`Visible for ${Math.max(1, Math.round((v.end - v.start) / MIN))} min`);
+  return bits.join('. ') + '.';
+}
+
+function rowSub(p) {
+  const w = shown(p);
+  let s = `${r0(w.max.el)}° high, ${O.compass(w.startAz)} to ${O.compass(w.endAz)}`;
+  if (p.visible && w.mag != null) s += `, ${magTxt(w.mag)}`;
+  if (!p.visible) s += p.why === 'daylight' ? ', daylight' : ', in shadow';
+  return s;
+}
+
+/* ---------- Sky dome ---------- */
+function xy(az, el) {
+  const r = 100 * (90 - Math.max(0, el)) / 90, a = az * Math.PI / 180;
+  return [r * Math.sin(a), -r * Math.cos(a)];
+}
+const pts = (arr) => arr.map((s) => xy(s.az, s.el).map((n) => n.toFixed(1)).join(',')).join(' ');
+
+function domeSvg(p, live) {
+  const id = 'g' + Math.random().toString(36).slice(2, 8);
+  let body = '';
+  if (p) {
+    const path = pathFor(p);
+    // split into runs of visible / not visible
+    const runs = [];
+    for (const s of path) {
+      const last = runs[runs.length - 1];
+      if (last && last.vis === s.vis) last.pts.push(s); else runs.push({ vis: s.vis, pts: last ? [last.pts[last.pts.length - 1], s] : [s] });
+    }
+    for (const r of runs) if (!r.vis) body += `<polyline class="ghost" points="${pts(r.pts)}"/>`;
+    for (const r of runs) if (r.vis) body += `<polyline class="lit" points="${pts(r.pts)}"/>`;
+    const v = p.visible;
+    if (v) {
+      const [sx, sy] = xy(v.startAz, v.startEl), [mx, my] = xy(v.max.az, v.max.el);
+      body += `<circle class="dot" cx="${sx.toFixed(1)}" cy="${sy.toFixed(1)}" r="3.2"/>`;
+      body += `<circle class="halo" cx="${mx.toFixed(1)}" cy="${my.toFixed(1)}" r="11"/><circle class="dot" cx="${mx.toFixed(1)}" cy="${my.toFixed(1)}" r="5"/>`;
+      // arrowhead at the visible end, pointing along the path
+      const lit = path.filter((s) => s.vis);
+      if (lit.length > 1) {
+        const a = xy(lit[lit.length - 2].az, lit[lit.length - 2].el), b = xy(lit[lit.length - 1].az, lit[lit.length - 1].el);
+        const ang = Math.atan2(b[1] - a[1], b[0] - a[0]) * 180 / Math.PI;
+        body += `<path class="dot" d="M7 0 L-4 -5 L-2 0 L-4 5 Z" transform="translate(${b[0].toFixed(1)} ${b[1].toFixed(1)}) rotate(${ang.toFixed(0)})"/>`;
+      }
+    } else {
+      const [mx, my] = xy(p.all.max.az, p.all.max.el);
+      body += `<circle class="faint-dot" cx="${mx.toFixed(1)}" cy="${my.toFixed(1)}" r="4"/>`;
+    }
+    if (live && live.el > 0) {
+      const [lx, ly] = xy(live.az, live.el);
+      body += `<circle class="now-ring" cx="${lx.toFixed(1)}" cy="${ly.toFixed(1)}" r="5"/><circle class="now" cx="${lx.toFixed(1)}" cy="${ly.toFixed(1)}" r="4.5"/>`;
+    }
+  }
+  return `<svg class="dome" viewBox="-112 -112 224 224" role="img" aria-label="Sky chart: north at the top, east to the right, the centre is straight up">
+    <defs><radialGradient id="${id}"><stop offset="0" style="stop-color:var(--dome-in)"/><stop offset="1" style="stop-color:var(--dome-out)"/></radialGradient></defs>
+    <circle class="rim" r="100" fill="url(#${id})"/>
+    <circle class="ring" r="66.7"/><circle class="ring" r="33.3"/>
+    <text x="0" y="-89">N</text><text x="89" y="0">E</text><text x="0" y="89">S</text><text x="-89" y="0">W</text>
+    ${body}
+  </svg>`;
+}
+
+/* ---------- Alerts (ntfy) ---------- */
+function alertFor(p) {
+  const w = alertWin(p);
+  for (const seq in S.alerts) {
+    const a = S.alerts[seq];
+    if (a.satId === p.satId && Math.abs(a.startMs - w.start) <= 5 * MIN) return seq;
+  }
+  return null;
+}
+
+function newTopic() {
+  const abc = 'abcdefghijkmnpqrstuvwxyz23456789';
+  const b = crypto.getRandomValues(new Uint8Array(18));
+  return 'overhead-' + Array.from(b, (x) => abc[x % abc.length]).join('');
+}
+function ensureTopic() {
+  if (!S.topic) { S.topic = newTopic(); put('topic', S.topic); }
+  return S.topic;
+}
+const appUrl = () => location.origin + location.pathname;
+
+async function publish(seq, p) {
+  const w = alertWin(p), now = Date.now();
+  const alertMs = w.start - S.set.lead * MIN;
+  const mins = Math.max(1, Math.round((w.start - Math.max(now, alertMs)) / MIN));
+  const q = new URLSearchParams({
+    title: `${p.name} in ${mins} min`,
+    tags: 'artificial_satellite',
+    priority: '4',
+    click: `${appUrl()}#t=${S.topic}`,
+  });
+  if (alertMs - now > 15e3) q.set('delay', String(Math.floor(alertMs / 1000)));
+  const r = await fetch(`${NTFY}/${S.topic}/${seq}?${q}`, { method: 'POST', body: story(p) });
+  if (!r.ok) throw new Error('ntfy ' + r.status);
+  S.alerts[seq] = { satId: p.satId, startMs: w.start, alertMs: Math.max(alertMs, now) };
+  put('alerts', S.alerts);
+}
+
+async function cancel(seq) {
+  let r = await fetch(`${NTFY}/${S.topic}/${seq}/delete`).catch(() => null);
+  if (!r || !r.ok) r = await fetch(`${NTFY}/${S.topic}/${seq}`, { method: 'DELETE' }).catch(() => null);
+  if (!r || !r.ok) throw new Error('cancel failed');
+  delete S.alerts[seq];
+  put('alerts', S.alerts);
+}
+
+async function toggleAlert(p, btn) {
+  if (!S.topic || !S.connected) { openConnect(p); return; }
+  const existing = alertFor(p);
+  btn && btn.classList.add('busy');
+  try {
+    if (existing) {
+      await cancel(existing);
+      toast('Alert removed');
+    } else {
+      const w = alertWin(p);
+      if (w.start <= Date.now()) { toast('This pass has already started'); return; }
+      const seq = passKey(p);
+      await publish(seq, p);
+      const at = S.alerts[seq].alertMs;
+      toast(at - Date.now() < 30e3 ? 'Alert sent' : `Alert set for ${time(at)}`);
+    }
+  } catch {
+    toast('Couldn’t reach ntfy. Check your connection and try again.');
+  } finally {
+    btn && btn.classList.remove('busy');
+    render();
+  }
+}
+
+// ntfy is the source of truth: read back what is scheduled for this topic
+async function syncAlerts() {
+  if (!S.topic || !S.connected) return;
+  let text;
+  try {
+    const r = await fetch(`${NTFY}/${S.topic}/json?poll=1&sched=1`, { cache: 'no-store' });
+    if (!r.ok) return;
+    text = await r.text();
+  } catch { return; }
+  const seen = {};
+  for (const line of text.split('\n')) {
+    if (!line.trim()) continue;
+    let m; try { m = JSON.parse(line); } catch { continue; }
+    const seq = m.sequence_id || m.id;
+    if (m.event === 'message') seen[seq] = { time: m.time * 1000, deleted: false };
+    else if (m.event === 'message_delete' && seen[seq]) seen[seq].deleted = true;
+  }
+  const now = Date.now(), next = {};
+  for (const seq in seen) {
+    const mm = /^(\d+)-(\d+)$/.exec(seq);
+    if (!mm || seen[seq].deleted) continue;
+    const startMs = +mm[2] * MIN;
+    if (startMs < now - 60 * MIN) continue;
+    next[seq] = { satId: mm[1], startMs, alertMs: seen[seq].time };
+  }
+  S.alerts = next;
+  put('alerts', S.alerts);
+  // nudge alerts whose pass times moved with fresher orbit data
+  for (const p of S.passes) {
+    const seq = alertFor(p);
+    if (!seq) continue;
+    const want = alertWin(p).start - S.set.lead * MIN;
+    if (want > now + MIN && Math.abs(want - S.alerts[seq].alertMs) > 45e3) {
+      try { await publish(seq, p); } catch {}
+    }
+  }
+  render();
+}
+
+async function sendTest() {
+  ensureTopic();
+  try {
+    const q = new URLSearchParams({ title: 'Overhead is connected', tags: 'white_check_mark', click: `${appUrl()}#t=${S.topic}` });
+    const r = await fetch(`${NTFY}/${S.topic}?${q}`, { method: 'POST', body: 'You’ll get a nudge here before each pass you choose.' });
+    if (!r.ok) throw 0;
+    toast('Test alert sent. Check ntfy.');
+  } catch { toast('Couldn’t reach ntfy. Check your connection.'); }
+}
+
+/* ---------- Calendar fallback ---------- */
+function addToCalendar(p) {
+  const w = alertWin(p);
+  const z = (ms) => new Date(ms).toISOString().replace(/[-:]/g, '').replace(/\.\d+/, '');
+  const fold = (s) => s.replace(/([,;\\])/g, '\\$1');
+  const ics = [
+    'BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//Overhead//EN', 'BEGIN:VEVENT',
+    `UID:${passKey(p)}@overhead`, `DTSTAMP:${z(Date.now())}`, `DTSTART:${z(w.start)}`, `DTEND:${z(w.end)}`,
+    `SUMMARY:${fold(p.name)} pass`, `DESCRIPTION:${fold(story(p))}`,
+    'BEGIN:VALARM', 'ACTION:DISPLAY', `DESCRIPTION:${fold(p.name)} pass`, `TRIGGER:-PT${S.set.lead}M`, 'END:VALARM',
+    'END:VEVENT', 'END:VCALENDAR',
+  ].join('\r\n');
+  const name = `${p.name.replace(/\W+/g, '-').toLowerCase()}-pass.ics`;
+  if (isIOS) { location.href = 'data:text/calendar;charset=utf-8,' + encodeURIComponent(ics); return; }
+  const url = URL.createObjectURL(new Blob([ics], { type: 'text/calendar' }));
+  const a = Object.assign(document.createElement('a'), { href: url, download: name });
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 4000);
+}
+
+/* ---------- Location ---------- */
+function askLocation(quiet) {
+  if (!navigator.geolocation) { if (!quiet) openSettings('location'); return; }
+  navigator.geolocation.getCurrentPosition((pos) => {
+    S.loc = { lat: pos.coords.latitude, lon: pos.coords.longitude, h: pos.coords.altitude || 0, at: Date.now() };
+    put('loc', S.loc);
+    compute();
+    if (sheet.open) openSettings('location');
+    if (!quiet) toast('Location updated');
+    if (!Object.keys(S.recs).length) refreshElements();
+  }, () => {
+    if (!quiet) { toast('Location is off. You can enter coordinates instead.'); openSettings('location'); }
+  }, { enableHighAccuracy: false, timeout: 15000, maximumAge: 10 * MIN });
+}
+
+/* ---------- Rendering ---------- */
+function bellHtml(p, extra = '') {
+  const on = !!alertFor(p);
+  const started = alertWin(p).start <= Date.now();
+  if (started && !on) return '';
+  return `<button class="bell ${extra}" type="button" data-bell="${esc(passKey(p))}" aria-pressed="${on}" aria-label="${on ? 'Alert set. Tap to remove' : 'Alert me before this pass'}">${ICON.bellOff}${ICON.bellOn}</button>`;
+}
+
+function renderHero() {
+  const el = $('#hero');
+  if (!S.loc) {
+    el.innerHTML = domeSvg(null) + `
+      <h1 class="empty-title">Where are you?</h1>
+      <p class="empty-body">Overhead works out which satellites pass over your exact spot. Your location stays on this phone.</p>
+      <div class="actions"><button class="btn primary" type="button" data-act="locate">Use my location</button>
+      <button class="link-btn" type="button" data-act="manual">Enter coordinates</button></div>`;
+    return;
+  }
+  if (S.loading) {
+    el.innerHTML = domeSvg(null) + `<h1 class="empty-title">Fetching orbits</h1><p class="empty-body">This takes a moment the first time.</p>`;
+    return;
+  }
+  if (!Object.keys(S.recs).length) {
+    el.innerHTML = domeSvg(null) + `<h1 class="empty-title">No orbit data yet</h1>
+      <p class="empty-body">Overhead couldn’t reach the orbit service. Check your connection and try again.</p>
+      <div class="actions"><button class="btn primary" type="button" data-act="retry">Try again</button></div>`;
+    return;
+  }
+  const list = visibleList();
+  const p = list[0];
+  if (!p) {
+    const vis = S.set.mode === 'visible';
+    el.innerHTML = domeSvg(null) + `<h1 class="empty-title">${vis ? 'No visible passes in the next three days' : 'No passes in the next three days'}</h1>
+      <p class="empty-body">${vis ? 'Switch to All passes to see ones in daylight or Earth’s shadow, or lower the minimum height in Settings.' : 'Try lowering the minimum height in Settings or adding more satellites.'}</p>`;
+    return;
+  }
+  const w = shown(p), now = Date.now();
+  const liveNow = w.start <= now && now < w.end;
+  const live = liveNow ? O.state(S.recs[p.satId], obs(), now) : null;
+  let when;
+  if (liveNow && live) {
+    when = `<strong>Up now</strong>, ${r0(live.el)}° high in the ${O.compassWords(live.az)}`;
+  } else {
+    const dw = dayWord(w.start);
+    const dayTxt = /^(Today|Tomorrow)$/.test(dw) ? dw.toLowerCase() : dw;
+    when = `<strong data-until="${w.start}">${esc(until(w.start).replace(/^in/, 'In'))}</strong>, ${esc(dayTxt)} at ${time(w.start)}`;
+  }
+  el.innerHTML = domeSvg(p, live) + `
+    <div class="title-row"><div><h1 class="sat-name">${esc(p.name)}</h1><p class="when num">${when}</p></div>${bellHtml(p)}</div>
+    <p class="story">${esc(story(p))}</p>
+    <p class="facts">${esc(facts(p))}</p>`;
+  el.dataset.key = passKey(p);
+  el.dataset.live = liveNow ? '1' : '';
+}
+
+function renderSwitch() {
+  const m = S.set.mode;
+  $('#switchWrap').innerHTML = S.loc && Object.keys(S.recs).length ? `<div class="switcher" role="group" aria-label="Which passes to show">
+    <button type="button" data-mode="visible" aria-pressed="${m === 'visible'}">Visible</button>
+    <button type="button" data-mode="all" aria-pressed="${m === 'all'}">All passes</button></div>` : '';
+}
+
+function renderList() {
+  const el = $('#list');
+  if (!S.loc) { el.innerHTML = ''; return; }
+  const list = visibleList().slice(1);
+  let html = '', lastDay = null;
+  for (const p of list) {
+    const w = shown(p), k = passKey(p), open = S.open === k;
+    const dk = dayKey(w.start);
+    if (dk !== lastDay) { html += `<h2 class="day">${esc(dayWord(w.start))}</h2>`; lastDay = dk; }
+    html += `<div class="pass${p.visible ? '' : ' dim'}" data-key="${esc(k)}">
+      <div class="pass-row">
+        <button class="pass-main" type="button" data-open="${esc(k)}" aria-expanded="${open}">
+          <span class="pass-time num">${time(w.start)}</span>
+          <span class="pass-name">${esc(p.name)}</span>
+          <span class="pass-sub num">${esc(rowSub(p))}</span>
+        </button>${bellHtml(p)}
+      </div>
+      ${open ? `<div class="pass-detail">${domeSvg(p)}<p class="story">${esc(story(p))}</p><p class="facts">${esc(facts(p))}</p>
+        <div class="actions"><button class="btn" type="button" data-cal="${esc(k)}">Add to calendar</button></div></div>` : ''}
+    </div>`;
+  }
+  el.innerHTML = html;
+}
+
+function renderNotices() {
+  const out = [];
+  const dismissed = get('dismissed', {});
+  const age = oldestData();
+  if (S.loc && age && Date.now() - age > 3 * 864e5) {
+    out.push(`<div class="notice"><p>Orbit data is from ${ago(age)}, so times may be a few minutes out.</p><button class="link-btn" type="button" data-act="refresh">Refresh</button></div>`);
+  }
+  if (!standalone && !dismissed.install) {
+    if (S.installEvt) out.push(`<div class="notice"><p>Add Overhead to your home screen for one-tap access.</p><button class="link-btn" type="button" data-act="install">Install</button><button class="x" type="button" data-dismiss="install" aria-label="Dismiss">${ICON.x}</button></div>`);
+    else if (isIOS) out.push(`<div class="notice"><p>Add Overhead to your Home Screen: tap Share, then Add to Home Screen.</p><button class="x" type="button" data-dismiss="install" aria-label="Dismiss">${ICON.x}</button></div>`);
+  }
+  $('#notices').innerHTML = out.join('');
+}
+
+function render() {
+  $('#where').textContent = S.loc ? coordTxt(S.loc) : '';
+  $('#where').setAttribute('aria-label', S.loc ? `Location ${coordTxt(S.loc)}. Change in settings` : '');
+  renderNotices();
+  renderHero();
+  renderSwitch();
+  renderList();
+}
+
+function findPass(k) { return S.passes.find((p) => passKey(p) === k); }
+
+/* ---------- Sheets ---------- */
+const sheet = $('#sheet');
+function openSheet(html) {
+  $('#sheetBody').innerHTML = `<div class="grabber"></div>` + html;
+  if (!sheet.open) sheet.showModal();
+}
+function closeSheet() { if (sheet.open) sheet.close(); }
+sheet.addEventListener('click', (e) => { if (e.target === sheet) closeSheet(); });
+const head = (title) => `<div class="sheet-head"><h2 id="sheetTitle">${title}</h2><button class="icon-btn" type="button" data-act="close" aria-label="Close">${ICON.x}</button></div>`;
+
+let pendingPass = null;
+function openConnect(p) {
+  pendingPass = p || null;
+  if (isIOS && !standalone) {
+    openSheet(head('Install first') + `<p>On iPhone, alerts belong to the installed app. Tap Share, then Add to Home Screen, and open Overhead from there.</p>
+      <div class="actions"><button class="btn primary" type="button" data-act="close">Got it</button></div>`);
+    return;
+  }
+  const topic = ensureTopic();
+  const deep = `ntfy://ntfy.sh/${topic}?display=Overhead`;
+  const steps = isAndroid ? `
+    <li><strong>Install ntfy</strong>A free notification app. No account needed.<br><a class="btn" href="${PLAY}" target="_blank" rel="noopener">Get ntfy</a></li>
+    <li><strong>Connect it to Overhead</strong><a class="btn" href="${deep}">Connect ntfy</a></li>
+    <li><strong>Turn on instant delivery</strong>In ntfy, open Overhead, tap the ⋮ menu and enable instant delivery. Without it, alerts can arrive late.</li>`
+  : `
+    <li><strong>Install ntfy</strong>A free notification app. No account needed.<br><a class="btn" href="${isIOS ? APPSTORE : 'https://ntfy.sh'}" target="_blank" rel="noopener">Get ntfy</a></li>
+    <li><strong>Copy your alert code</strong><button class="btn" type="button" data-act="copy">Copy code</button><br><span class="code">${esc(topic)}</span></li>
+    <li><strong>Subscribe in ntfy</strong>Tap +, paste the code as the topic and tap Subscribe.</li>`;
+  openSheet(head('Get pass alerts') + `<p>Overhead sends a nudge through ntfy ${S.set.lead} minutes before each pass you choose.</p>
+    <ol class="steps">${steps}</ol>
+    <div class="actions"><button class="btn primary" type="button" data-act="connected">Done</button><button class="btn" type="button" data-act="test">Send test alert</button></div>`);
+}
+
+function satListHtml() {
+  return S.sats.map((s) => `<li><span>${esc(friendly(s.id, s.name))}<small class="num">Catalogue ${esc(s.id)}</small></span>
+    <button class="mini" type="button" data-remove="${esc(s.id)}">Remove</button></li>`).join('');
+}
+
+function openSettings(focus) {
+  const lead = S.set.lead, mp = S.set.minPeak;
+  const alertsBlock = S.connected && S.topic ? `<p>Alerts go to ntfy on this phone.</p>
+      <div class="actions"><button class="btn" type="button" data-act="test">Send test alert</button><button class="btn" type="button" data-act="setup">Setup steps</button></div>`
+    : `<p>Get a nudge before the passes you choose.</p><div class="actions"><button class="btn primary" type="button" data-act="setup">Set up alerts</button></div>`;
+  const age = oldestData();
+  openSheet(head('Settings') + `
+    <h3>Alerts</h3>${alertsBlock}
+    <p class="small" style="margin-top:16px">Remind me this long before a pass</p>
+    <div class="chips" role="group" aria-label="Reminder time">${[5, 10, 15].map((m) => `<button class="chip" type="button" data-lead="${m}" aria-pressed="${lead === m}">${m} min</button>`).join('')}</div>
+
+    <h3>Passes</h3>
+    <p class="small">Show passes that reach at least</p>
+    <div class="chips" role="group" aria-label="Minimum height">${[10, 20, 30, 45].map((d) => `<button class="chip" type="button" data-peak="${d}" aria-pressed="${mp === d}">${d}°</button>`).join('')}</div>
+
+    <h3>Satellites</h3>
+    <ul class="list" id="satList">${satListHtml()}</ul>
+    <form class="field-row" id="addForm"><input class="field" id="addQ" placeholder="Name or catalogue number" autocomplete="off" enterkeyhint="search" aria-label="Find a satellite"><button class="btn" type="submit">Find</button></form>
+    <ul class="list" id="results"></ul>
+
+    <h3 id="locHead">Location</h3>
+    <p class="num">${S.loc ? esc(coordTxt(S.loc)) : 'Not set'}</p>
+    <div class="actions"><button class="btn" type="button" data-act="locate">Use my location</button></div>
+    <form class="field-row" id="locForm"><input class="field num" id="latIn" inputmode="decimal" placeholder="Latitude, e.g. 51.43" aria-label="Latitude" value="${S.loc ? S.loc.lat.toFixed(4) : ''}">
+      <input class="field num" id="lonIn" inputmode="decimal" placeholder="Longitude, e.g. -0.33" aria-label="Longitude" value="${S.loc ? S.loc.lon.toFixed(4) : ''}"><button class="btn" type="submit">Save</button></form>
+
+    <h3>Display</h3>
+    <div class="toggle-row"><p>Night vision<br><span class="small">Dim red to keep your eyes adjusted to the dark</span></p>
+      <button class="switch" type="button" role="switch" data-act="night" aria-checked="${!!S.set.night}" aria-label="Night vision"></button></div>
+
+    <h3>Orbit data</h3>
+    <p id="dataAge">${age ? `Updated ${ago(age)}.` : 'Not downloaded yet.'}</p>
+    <div class="actions"><button class="btn" type="button" data-act="refresh">Refresh now</button></div>
+  `);
+  if (focus === 'location') setTimeout(() => $('#locHead').scrollIntoView({ block: 'start' }), 50);
+}
+
+async function searchSats(q) {
+  const res = $('#results');
+  res.innerHTML = `<li><span class="small">Searching…</span></li>`;
+  const key = /^\d+$/.test(q) ? 'CATNR' : 'NAME';
+  let rows = [];
+  try {
+    const r = await fetch(`${CELESTRAK}?${key}=${encodeURIComponent(q)}&FORMAT=JSON`);
+    if (r.ok) { const j = await r.json().catch(() => []); if (Array.isArray(j)) rows = j; }
+  } catch {
+    res.innerHTML = `<li><span class="small">Couldn’t reach CelesTrak. Check your connection.</span></li>`;
+    return;
+  }
+  if (!rows.length) { res.innerHTML = `<li><span class="small">No satellites match “${esc(q)}”.</span></li>`; return; }
+  const shownRows = rows.slice(0, 8);
+  res.innerHTML = shownRows.map((o, i) => {
+    const high = +o.MEAN_MOTION < 6.4;
+    const have = S.sats.some((s) => s.id === String(o.NORAD_CAT_ID));
+    return `<li><span>${esc(o.OBJECT_NAME)}<small class="num">Catalogue ${esc(o.NORAD_CAT_ID)}${high ? ', high orbit, no passes to show' : ''}</small></span>
+      ${have ? '<span class="small">Added</span>' : high ? '' : `<button class="mini" type="button" data-add="${i}">Add</button>`}</li>`;
+  }).join('') + (rows.length > 8 ? `<li><span class="small">Showing 8 of ${rows.length}. Try a more specific name.</span></li>` : '');
+  res._rows = shownRows;
+}
+
+/* ---------- Events ---------- */
+document.addEventListener('click', async (e) => {
+  const t = e.target.closest('button, a');
+  if (!t) return;
+  const d = t.dataset;
+
+  if (d.bell) { const p = findPass(d.bell); if (p) toggleAlert(p, t); return; }
+  if (d.open) { S.open = S.open === d.open ? null : d.open; renderList(); return; }
+  if (d.cal) { const p = findPass(d.cal); if (p) addToCalendar(p); return; }
+  if (d.mode) { S.set.mode = d.mode; S.open = null; saveSet(); render(); return; }
+  if (d.dismiss) { const x = get('dismissed', {}); x[d.dismiss] = 1; put('dismissed', x); renderNotices(); return; }
+  if (d.lead || d.peak) {
+    t.parentElement.querySelectorAll('.chip').forEach((c) => c.setAttribute('aria-pressed', String(c === t)));
+    if (d.lead) { S.set.lead = +d.lead; saveSet(); resyncLead(); }
+    else { S.set.minPeak = +d.peak; saveSet(); render(); }
+    return;
+  }
+  if (d.remove) {
+    S.sats = S.sats.filter((s) => s.id !== d.remove); put('sats', S.sats);
+    buildRecs(); compute(); $('#satList').innerHTML = satListHtml(); return;
+  }
+  if (d.add != null) {
+    const o = $('#results')._rows[+d.add];
+    const id = String(o.NORAD_CAT_ID);
+    S.sats.push({ id, name: o.OBJECT_NAME }); put('sats', S.sats);
+    S.els[id] = { omm: o, at: Date.now() }; put('els', S.els);
+    buildRecs(); compute();
+    $('#satList').innerHTML = satListHtml();
+    t.replaceWith(Object.assign(document.createElement('span'), { className: 'small', textContent: 'Added' }));
+    toast(`${o.OBJECT_NAME} added`);
+    return;
+  }
+
+  switch (d.act) {
+    case 'close': closeSheet(); break;
+    case 'locate': askLocation(false); break;
+    case 'manual': openSettings('location'); break;
+    case 'retry': refreshElements(true); break;
+    case 'refresh': {
+      t.disabled = true;
+      const ok = await refreshElements(true);
+      toast(ok ? 'Orbits updated' : 'Couldn’t update orbits. Showing saved data.');
+      t.disabled = false;
+      const age = $('#dataAge'); if (age) age.textContent = `Updated ${ago(oldestData())}.`;
+      syncAlerts();
+      break;
+    }
+    case 'install':
+      if (S.installEvt) { S.installEvt.prompt(); S.installEvt = null; renderNotices(); }
+      break;
+    case 'setup': openConnect(); break;
+    case 'copy':
+      try { await navigator.clipboard.writeText(S.topic); toast('Code copied'); }
+      catch { toast('Press and hold the code to copy it'); }
+      break;
+    case 'test': sendTest(); break;
+    case 'connected':
+      S.connected = true; put('connected', true); closeSheet();
+      if (pendingPass) { const p = pendingPass; pendingPass = null; const fresh = findPass(passKey(p)) || p; toggleAlert(fresh, null); }
+      else toast('Alerts are ready');
+      break;
+    case 'night': setNight(!S.set.night); t.setAttribute('aria-checked', String(!!S.set.night)); break;
+  }
+});
+
+document.addEventListener('submit', (e) => {
+  e.preventDefault();
+  if (e.target.id === 'addForm') { const q = $('#addQ').value.trim(); if (q) searchSats(q); }
+  if (e.target.id === 'locForm') {
+    const lat = parseFloat($('#latIn').value), lon = parseFloat($('#lonIn').value);
+    if (!(Math.abs(lat) <= 90) || !(Math.abs(lon) <= 180)) { toast('Enter latitude −90 to 90 and longitude −180 to 180'); return; }
+    S.loc = { lat, lon, h: 0, at: Date.now() }; put('loc', S.loc);
+    closeSheet(); compute();
+    if (!Object.keys(S.recs).length) refreshElements();
+    toast('Location saved');
+  }
+});
+
+$('#settingsBtn').addEventListener('click', () => openSettings());
+$('#where').addEventListener('click', () => openSettings('location'));
+$('#nightBtn').addEventListener('click', () => setNight(!S.set.night));
+
+function setNight(on) {
+  S.set.night = on; saveSet();
+  document.documentElement.toggleAttribute('data-night', on);
+  $('#nightBtn').setAttribute('aria-pressed', String(on));
+  document.querySelector('meta[name=theme-color]').setAttribute('content', on ? '#0C0404' : '#0F1528');
+}
+
+async function resyncLead() {
+  // re-time any pending alerts to the new reminder lead
+  for (const p of S.passes) {
+    const seq = alertFor(p);
+    if (seq && alertWin(p).start - S.set.lead * MIN > Date.now()) { try { await publish(seq, p); } catch {} }
+  }
+}
+
+window.addEventListener('beforeinstallprompt', (e) => { e.preventDefault(); S.installEvt = e; renderNotices(); });
+
+/* ---------- Clock ---------- */
+let lastTick = 0;
+setInterval(() => {
+  const now = Date.now();
+  if (now - S.computedAt > 30 * MIN && S.loc) { compute(); return; }
+  const hero = $('#hero');
+  const first = visibleList()[0];
+  if (first && hero.dataset.key !== passKey(first)) { render(); return; }
+  if (hero.dataset.live || (first && shown(first).start <= now)) { renderHero(); return; }
+  if (now - lastTick > 15e3) {
+    lastTick = now;
+    document.querySelectorAll('[data-until]').forEach((n) => { n.textContent = until(+n.dataset.until).replace(/^in/, 'In'); });
+  }
+}, 1000);
+
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState !== 'visible') return;
+  if (Date.now() - S.computedAt > 5 * MIN) compute();
+  refreshElements(false);
+  syncAlerts();
+});
+
+/* ---------- Start ---------- */
+(function start() {
+  const m = /[#&]t=(overhead-[a-z0-9]+)/.exec(location.hash);
+  if (m) {
+    S.topic = m[1]; put('topic', S.topic);
+    S.connected = true; put('connected', true);
+    history.replaceState(null, '', location.pathname + location.search);
+  }
+  setNight(!!S.set.night);
+  buildRecs();
+  compute();
+  refreshElements(false).then(syncAlerts);
+  if (S.loc && navigator.permissions) {
+    navigator.permissions.query({ name: 'geolocation' }).then((st) => {
+      if (st.state === 'granted' && Date.now() - (S.loc.at || 0) > 6 * 3600e3) askLocation(true);
+    }).catch(() => {});
+  }
+  if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(() => {});
+})();
+})();
+</script>
+</body>
+</html>

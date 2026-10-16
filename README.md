@@ -1,0 +1,42 @@
+# Overhead
+
+Satellite passes over you, with an ntfy nudge before the ones you pick. Static files only: no server, account or database.
+
+## Host it (once)
+
+Any HTTPS static host works. Upload this folder as is.
+
+- **Firebase Hosting:** `firebase init hosting` (public directory: this folder, single-page app: no), then `firebase deploy`.
+- **GitHub Pages:** push the folder to a repo and turn on Pages for it.
+
+Keep the same URL from then on. Each phone's saved settings are tied to it.
+
+## Share it
+
+Send people the link. On their phone:
+
+1. Open the link and tap **Use my location**.
+2. **Android:** tap Install when offered. **iPhone:** in Safari tap Share, then Add to Home Screen, and open Overhead from the home screen.
+3. Tap the bell on any pass and follow the three steps to connect ntfy.
+
+Each phone gets its own private alert code, so nobody sees anyone else's alerts. Tapping any alert reopens Overhead with that phone's code, which restores alerts if the phone's storage was ever cleared.
+
+## Update it
+
+Edit and redeploy. Phones pick up the new version the next time they open the app online.
+
+## Files
+
+| File | What it does |
+| --- | --- |
+| `index.html` | The app: layout, styles and behaviour |
+| `core.js` | Orbit maths: SGP4, Sun position, pass search, brightness |
+| `sw.js` | Offline support and updates |
+| `manifest.webmanifest`, icons | Install to home screen |
+
+## Good to know
+
+- Location never leaves the phone. Orbit data comes from CelesTrak, with a backup source if it's unreachable.
+- ntfy holds scheduled alerts for up to 3 days ahead, which covers the window the app shows.
+- Brightness estimates are shown for the ISS and Tiangong only. Other satellites you add show times and directions.
+- Low-orbit satellites only. High orbits (GPS, geostationary) show in search but can't be added, because they don't make passes.
