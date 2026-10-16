@@ -343,11 +343,13 @@ dialog.sheet::backdrop { background: rgba(4, 6, 14, .62); }
 <dialog class="sheet" id="sheet" aria-labelledby="sheetTitle"><div class="sheet-in" id="sheetBody"></div></dialog>
 <div class="toast" id="toast" role="status"></div>
 
-<script src="core.js"></script>
+<script src="core.js?v=7"></script>
 <script>
 (() => {
 'use strict';
 const O = window.Orbit;
+// Release tag from the core.js link above, passed on to the worker so every file comes from the same release
+const V = new URL(document.querySelector('script[src^="core.js"]').src).search;
 
 /* ---------- Constants ---------- */
 const NTFY = 'https://ntfy.sh';
@@ -649,7 +651,7 @@ function computeExtras(force) {
   X.busy = true; X.done = 0; X.total = items.length;
   X.key = extrasKey();
   renderExtras();
-  try { extrasWorker = new Worker('extras-worker.js'); }
+  try { extrasWorker = new Worker('extras-worker.js' + V); }
   catch { X.busy = false; X.failed = true; renderExtras(); return; }
   extrasWorker.onmessage = (e) => {
     const m = e.data;
@@ -780,14 +782,17 @@ function tonight() {
 
 const moonShort = (i) => (i < 0.03 ? 'new Moon' : i > 0.97 ? 'full Moon' : `Moon ${Math.round(i * 100)}%`);
 
+// The sky line is a nice-to-have: if anything in it fails, hide it and let the rest of the app carry on
 function renderSky() {
   const btn = $('#skyBtn');
-  if (!S.loc) { btn.hidden = true; return; }
-  const n = tonight();
-  const txt = `${n.label}: ${n.word ? n.word.toLowerCase() + ', ' : ''}${moonShort(n.moon.illum)}`;
-  btn.hidden = false;
-  if (btn.textContent !== txt) btn.textContent = txt;
-  btn.setAttribute('aria-label', `${txt}. Show details`);
+  try {
+    if (!S.loc) { btn.hidden = true; return; }
+    const n = tonight();
+    const txt = `${n.label}: ${n.word ? n.word.toLowerCase() + ', ' : ''}${moonShort(n.moon.illum)}`;
+    btn.hidden = false;
+    if (btn.textContent !== txt) btn.textContent = txt;
+    btn.setAttribute('aria-label', `${txt}. Show details`);
+  } catch { btn.hidden = true; }
 }
 
 function moonLine(n) {
@@ -830,7 +835,11 @@ function skyPopHtml() {
     <p class="sky-moon">${esc(moonLine(n))}</p>
     <div class="pop-foot">${foot}<a class="link-btn" href="https://open-meteo.com" target="_blank" rel="noopener">Open-Meteo</a></div>`;
 }
-function refreshSkyPop() { const p = $('#skyPop'); if (p && !p.hidden && S.loc) p.innerHTML = skyPopHtml(); }
+function refreshSkyPop() { const p = $('#skyPop'); if (p && !p.hidden && S.loc) p.innerHTML = safeSkyPopHtml(); }
+function safeSkyPopHtml() {
+  try { return skyPopHtml(); }
+  catch { return `<h2 class="pop-title">Tonight’s sky</h2><p class="sky-sum">Couldn’t show tonight’s sky. Close Overhead fully and open it again.</p>`; }
+}
 
 /* ---------- Words ---------- */
 function story(p) {
@@ -1765,7 +1774,7 @@ function togglePop(id, open) {
   for (const other in POPS) if (other !== id && !$('#' + other).hidden) togglePop(other, false);
   if (show) {
     if (id === 'skyPop') fetchSky(false);   // marks itself busy straight away if a fetch is due
-    pop.innerHTML = id === 'themes' ? themeGridHtml() : id === 'skyPop' ? skyPopHtml() : alertsPopHtml();
+    pop.innerHTML = id === 'themes' ? themeGridHtml() : id === 'skyPop' ? safeSkyPopHtml() : alertsPopHtml();
     if (id === 'alertsPop' && S.connected && S.topic) syncAlerts().then(refreshAlertList);
     if (id === 'skyPop') { const b = $('#skyBtn'); pop.style.top = `${b.offsetTop + b.offsetHeight + 10}px`; }
   }

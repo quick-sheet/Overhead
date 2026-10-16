@@ -1,9 +1,10 @@
 /* Overhead service worker: works offline, picks up updates on the next open. */
-const CACHE = 'overhead-v6';
+const CACHE = 'overhead-v7';
 const SHELL = ['./', 'index.html', 'core.js', 'extras-worker.js', 'manifest.webmanifest', 'icon.svg', 'icon-192.png', 'icon-512.png', 'apple-touch-icon.png'];
 
 self.addEventListener('install', (e) => {
-  e.waitUntil(caches.open(CACHE).then((c) => c.addAll(SHELL)).then(() => self.skipWaiting()));
+  // 'reload' skips the browser's own copy, so the offline set is always the release just published
+  e.waitUntil(caches.open(CACHE).then((c) => c.addAll(SHELL.map((u) => new Request(u, { cache: 'reload' })))).then(() => self.skipWaiting()));
 });
 
 self.addEventListener('activate', (e) => {
@@ -21,13 +22,16 @@ self.addEventListener('fetch', (e) => {
   if (req.method !== 'GET') return;
   const url = new URL(req.url);
 
-  // App files: network first so updates arrive straight away, cache when offline
+  // App files: network first so updates arrive straight away, cache when offline.
+  // 'no-cache' asks GitHub every time (a quick "unchanged" when nothing's new), so the
+  // phone never mixes a new page with an older script it kept from the last 10 minutes.
   if (url.origin === location.origin) {
     e.respondWith((async () => {
       const cache = await caches.open(CACHE);
       try {
+        const net = req.mode === 'navigate' ? fetch(req.url, { cache: 'no-cache', credentials: 'same-origin' }) : fetch(req, { cache: 'no-cache' });
         const res = await Promise.race([
-          fetch(req),
+          net,
           new Promise((_, rej) => setTimeout(() => rej(new Error('slow')), 4000)),
         ]);
         if (res.ok) cache.put(req, res.clone());

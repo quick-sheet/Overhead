@@ -1,6 +1,6 @@
 /* Overhead background calculator: finds visible, high passes for long lists
    (bright satellites, recent launches) without slowing the app down. */
-importScripts('core.js');
+importScripts('core.js' + self.location.search);   // same release as the page
 const O = self.Orbit;
 const MIN = 60000;
 

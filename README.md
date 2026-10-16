@@ -25,6 +25,8 @@ Each phone gets its own private alert code, so nobody sees anyone else's alerts.
 
 Edit and redeploy. Phones pick up the new version the next time they open the app online.
 
+Each release, bump both version markers together: `core.js?v=N` in `index.html` and `overhead-vN` in `sw.js`. This makes every file arrive as one release. GitHub Pages lets phones keep files for up to 10 minutes, and a new page with an older `core.js` can stop the app.
+
 ## Files
 
 | File | What it does |
