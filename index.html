@@ -164,7 +164,13 @@ header { display: flex; align-items: center; justify-content: space-between; pad
 .pass-detail .story { font-size: 16px; margin-top: 0; }
 .pass-detail .actions { margin-top: 12px; }
 .pass-detail .btn { height: 38px; font-size: 14px; padding: 0 14px; }
+.section-title { margin: 40px 0 2px; font-size: 18px; font-weight: 600; letter-spacing: -.01em; }
+.section-note { margin: 2px 0 0; font-size: 13.5px; color: var(--ink-3); }
+.day-count { margin-left: 6px; font-size: 12.5px; color: var(--ink-3); font-weight: 400; }
+.more-btn { display: block; width: 100%; padding: 12px 0; text-align: left; font-size: 14px; font-weight: 500; color: var(--ink-2); border-bottom: 1px solid var(--line); }
 .foot { margin-top: 36px; font-size: 12.5px; color: var(--ink-3); }
+.sheet .sub-head { margin-top: 18px; }
+.sheet .toggle-row + .toggle-row { margin-top: 10px; }
 .foot a { color: var(--ink-3); }
 
 /* Sheets */
@@ -295,6 +301,7 @@ dialog.sheet::backdrop { background: rgba(4, 6, 14, .62); }
     <section class="hero" id="hero" aria-live="polite"></section>
     <div id="switchWrap"></div>
     <div id="list"></div>
+    <section id="extras" aria-label="Also passing"></section>
   </main>
   <p class="foot">Orbits from <a href="https://celestrak.org" target="_blank" rel="noopener">CelesTrak</a>. Alerts by <a href="https://ntfy.sh" target="_blank" rel="noopener">ntfy</a>. Times are for your location and may drift a little for passes more than a day away.</p>
 </div>
@@ -325,7 +332,17 @@ const TLE_API = 'https://tle.ivanstanojevic.me/api/tle/';
 const PLAY = 'https://play.google.com/store/apps/details?id=io.heckel.ntfy';
 const APPSTORE = 'https://apps.apple.com/app/ntfy/id1625396347';
 const DEFAULT_SATS = [{ id: '25544', name: 'ISS' }, { id: '48274', name: 'Tiangong' }];
-const FRIENDLY = { '25544': 'ISS', '48274': 'Tiangong', '20580': 'Hubble' };
+const FRIENDLY = { '25544': 'ISS', '48274': 'Tiangong', '20580': 'Hubble', '27386': 'Envisat', '53807': 'BlueWalker 3', '16908': 'Ajisai' };
+// Well-known satellites to add with one tap. inc and alt (km) are approximate, used only to say whether it can pass over you.
+const POPULAR = [
+  { id: '25544', name: 'ISS', note: 'The International Space Station, usually the brightest satellite you’ll see.', inc: 51.6, alt: 420 },
+  { id: '48274', name: 'Tiangong', note: 'China’s space station.', inc: 41.5, alt: 385 },
+  { id: '20580', name: 'Hubble', note: 'The space telescope.', inc: 28.5, alt: 520 },
+  { id: '27386', name: 'Envisat', note: 'A huge retired European Earth-watching satellite, slowly tumbling.', inc: 98.5, alt: 765 },
+  { id: '53807', name: 'BlueWalker 3', note: 'A giant antenna test satellite, often very bright.', inc: 53.2, alt: 500 },
+  { id: '16908', name: 'Ajisai', note: 'A mirror-covered sphere that glints as it spins. Faint, for keen eyes.', inc: 50.0, alt: 1490 },
+];
+const GROUPS = { bright: { group: 'visual', ttl: 12 * 3600e3 }, recent: { group: 'last-30-days', ttl: 6 * 3600e3 } };
 const THEMES = [
   { id: 'twilight', name: 'Twilight', bg: '#0F1528', dome: '#1A2448', accent: '#F2C063' },
   { id: 'red', name: 'Night red', bg: '#0C0404', dome: '#1E0808', accent: '#FF5B3D' },
@@ -351,7 +368,8 @@ const S = {
   loc: get('loc', null),
   sats: get('sats', DEFAULT_SATS),
   els: get('els', {}),
-  set: Object.assign({ lead: 10, minPeak: 10, mode: 'visible', theme: null, compass: false }, get('settings', {})),
+  set: Object.assign({ lead: 10, minPeak: 10, mode: 'visible', theme: null, compass: false, bright: false, recent: false }, get('settings', {})),
+  extra: { recs: {}, passes: [], busy: false, failed: false, at: 0, key: '', done: 0, total: 0, more: {} },
   topic: get('topic', null),
   connected: get('connected', false),
   alerts: get('alerts', {}),
@@ -495,7 +513,10 @@ const oldestData = () => {
 
 /* ---------- Passes ---------- */
 const alertWin = (p) => p.visible || p.all;
-const shown = (p) => (S.set.mode === 'visible' ? p.visible : p.all);
+// "Also passing" entries are always visible passes; your own satellites follow the Visible / All switch
+const shown = (p) => (p.kind || S.set.mode === 'visible' ? p.visible : p.all);
+const recFor = (id) => S.recs[id] || S.extra.recs[id];
+const allPasses = () => S.passes.concat(S.extra.passes);
 const passKey = (p) => `${p.satId}-${Math.round(alertWin(p).start / MIN)}`;
 
 function obs() { return O.observer(S.loc.lat, S.loc.lon, (S.loc.h || 0) / 1000); }
@@ -515,6 +536,104 @@ function compute() {
   S.paths.clear();
   S.computedAt = now;
   render();
+  maybeExtras();
+}
+
+/* ---------- Also passing: bright satellites and recent launches ---------- */
+const OMM_KEYS = ['OBJECT_NAME', 'OBJECT_ID', 'NORAD_CAT_ID', 'EPOCH', 'MEAN_MOTION', 'ECCENTRICITY', 'INCLINATION', 'RA_OF_ASC_NODE', 'ARG_OF_PERICENTER', 'MEAN_ANOMALY', 'BSTAR'];
+const slim = (o) => { const s = {}; for (const k of OMM_KEYS) s[k] = o[k]; return s; };
+const cleanName = (n) => String(n || '').trim().replace(/\s+R\/B$/i, ' rocket stage').replace(/\s+DEB$/i, ' debris');
+
+async function fetchGroup(kind) {
+  const g = GROUPS[kind];
+  try {
+    const r = await fetch(`${CELESTRAK}?GROUP=${g.group}&FORMAT=JSON`, { cache: 'no-store' });
+    if (!r.ok) throw 0;
+    const rows = (await r.json()).filter((o) => +o.MEAN_MOTION >= 6.4);   // low orbits only
+    let items;
+    if (kind === 'bright') {
+      items = rows.map((o) => ({ omm: slim(o), name: cleanName(o.OBJECT_NAME) }));
+    } else {
+      // one entry per launch: a Starlink batch moves together as a "train"
+      const byLaunch = {};
+      for (const o of rows) { const k = String(o.OBJECT_ID || '').slice(0, 8); (byLaunch[k] = byLaunch[k] || []).push(o); }
+      items = Object.values(byLaunch).map((objs) => {
+        objs.sort((a, b) => String(a.OBJECT_ID).localeCompare(String(b.OBJECT_ID)));
+        const rep = objs[0], starlink = objs.filter((o) => /^STARLINK/i.test(o.OBJECT_NAME)).length > objs.length / 2;
+        const name = starlink ? `Starlink train (${objs.length})` : cleanName(rep.OBJECT_NAME) + (objs.length > 1 ? ` and ${objs.length - 1} more` : '');
+        return { omm: slim(rep), name };
+      });
+    }
+    put('grp.' + kind, { at: Date.now(), items });
+    return true;
+  } catch { return false; }
+}
+
+async function loadGroups(force) {
+  if (S.extra.loading) return;
+  S.extra.loading = true;
+  let failed = false;
+  for (const kind of ['bright', 'recent']) {
+    if (!S.set[kind]) continue;
+    const c = get('grp.' + kind, null);
+    if (force || !c || Date.now() - c.at > GROUPS[kind].ttl) { if (!(await fetchGroup(kind)) && !c) failed = true; }
+  }
+  S.extra.failed = failed;
+  S.extra.loading = false;
+  computeExtras(true);
+}
+
+function extraItems() {
+  const own = new Set(S.sats.map((s) => s.id)), items = [];
+  S.extra.recs = {};
+  for (const kind of ['bright', 'recent']) {
+    if (!S.set[kind]) continue;
+    const c = get('grp.' + kind, null);
+    if (!c) continue;
+    for (const it of c.items) {
+      const id = String(it.omm.NORAD_CAT_ID);
+      if (own.has(id) || S.extra.recs[id]) continue;
+      try {
+        const rec = O.init(O.fromOMM(it.omm));
+        if (rec.error) continue;
+        rec.name = it.name;
+        S.extra.recs[id] = rec;
+        items.push({ omm: it.omm, name: it.name, kind });
+      } catch {}
+    }
+  }
+  return items;
+}
+
+let extrasWorker = null;
+function computeExtras(force) {
+  if (extrasWorker) { extrasWorker.terminate(); extrasWorker = null; }
+  const X = S.extra;
+  X.passes = []; X.busy = false;
+  if (!S.loc || !(S.set.bright || S.set.recent)) { X.recs = {}; renderExtras(); return; }
+  const items = extraItems();
+  if (!items.length) { renderExtras(); return; }
+  const now = Date.now();
+  X.busy = true; X.done = 0; X.total = items.length;
+  X.key = extrasKey();
+  renderExtras();
+  try { extrasWorker = new Worker('extras-worker.js'); }
+  catch { X.busy = false; X.failed = true; renderExtras(); return; }
+  extrasWorker.onmessage = (e) => {
+    const m = e.data;
+    X.passes.push(...m.passes);
+    X.done = m.done;
+    if (m.type === 'done') { X.busy = false; X.at = Date.now(); extrasWorker.terminate(); extrasWorker = null; }
+    renderExtras();
+  };
+  extrasWorker.onerror = () => { X.busy = false; X.failed = true; renderExtras(); };
+  extrasWorker.postMessage({ items, loc: S.loc, from: now - 20 * MIN, to: now + HOURS * 3600e3, minPeak: extrasPeak() });
+}
+const extrasPeak = () => Math.max(30, S.set.minPeak);
+const extrasKey = () => `${S.loc && S.loc.lat.toFixed(2)},${S.loc && S.loc.lon.toFixed(2)}|${extrasPeak()}|${S.set.bright}|${S.set.recent}|${S.sats.length}`;
+function maybeExtras() {
+  if (!(S.set.bright || S.set.recent) || !S.loc || S.extra.busy || S.extra.loading) return;
+  if (S.extra.key !== extrasKey() || Date.now() - S.extra.at > 30 * MIN) loadGroups(false);
 }
 
 function visibleList() {
@@ -526,7 +645,7 @@ function visibleList() {
 
 function pathFor(p) {
   const k = passKey(p);
-  if (!S.paths.has(k)) S.paths.set(k, O.path(S.recs[p.satId], obs(), p));
+  if (!S.paths.has(k)) S.paths.set(k, O.path(recFor(p.satId), obs(), p));
   return S.paths.get(k);
 }
 
@@ -556,6 +675,7 @@ function facts(p) {
   const bits = [];
   if (v.mag != null) bits.push(`${brightWord(v.mag)}, about ${magTxt(v.mag)} magnitude`);
   bits.push(`Visible for ${Math.max(1, Math.round((v.end - v.start) / MIN))} min`);
+  if (p.kind) bits.push(`Catalogue ${p.satId}`);   // tells same-named rocket stages apart
   return bits.join('. ') + '.';
 }
 
@@ -777,7 +897,7 @@ async function openAim(p) {
   const css = getComputedStyle(document.documentElement);
   const v = (n) => css.getPropertyValue(n).trim();
   Object.assign(AIM, {
-    on: true, pass: p, rec: S.recs[p.satId], obs: obs(), path: pathFor(p), raw: null, X: null, Y: null, Z: null,
+    on: true, pass: p, rec: recFor(p.satId), obs: obs(), path: pathFor(p), raw: null, X: null, Y: null, Z: null,
     needFlat: false, lastEvt: 0, openedAt: Date.now(), hit: false, textAt: 0,
     half: S.set.aimHalf || AIM_HALF, zoomAt: 0, pinch: null, hint: (S.set.aimOpens || 0) < 3,
     col: { bg: v('--bg'), ink: v('--ink'), ink2: v('--ink-2'), ink3: v('--ink-3'), sun: v('--sun'), soft: v('--sun-soft'), font: getComputedStyle(document.body).fontFamily },
@@ -1140,7 +1260,7 @@ async function syncAlerts() {
   S.alerts = next;
   put('alerts', S.alerts);
   // nudge alerts whose pass times moved with fresher orbit data
-  for (const p of S.passes) {
+  for (const p of allPasses()) {
     const seq = alertFor(p);
     if (!seq) continue;
     const want = alertWin(p).start - S.set.lead * MIN;
@@ -1260,16 +1380,9 @@ function renderSwitch() {
     <button type="button" data-mode="all" aria-pressed="${m === 'all'}">All passes</button></div>` : '';
 }
 
-function renderList() {
-  const el = $('#list');
-  if (!S.loc) { el.innerHTML = ''; return; }
-  const list = visibleList().slice(1);
-  let html = '', lastDay = null;
-  for (const p of list) {
-    const w = shown(p), k = passKey(p), open = S.open === k;
-    const dk = dayKey(w.start);
-    if (dk !== lastDay) { html += `<h2 class="day">${esc(dayWord(w.start))}</h2>`; lastDay = dk; }
-    html += `<div class="pass${p.visible ? '' : ' dim'}" data-key="${esc(k)}">
+function rowHtml(p) {
+  const w = shown(p), k = passKey(p), open = S.open === k;
+  return `<div class="pass${p.visible ? '' : ' dim'}" data-key="${esc(k)}">
       <div class="pass-row">
         <button class="pass-main" type="button" data-open="${esc(k)}" aria-expanded="${open}">
           <span class="pass-time num">${time(w.start)}</span>
@@ -1280,6 +1393,49 @@ function renderList() {
       ${open ? `<div class="pass-detail">${domeSvg(p)}<p class="story">${esc(story(p))}</p><p class="facts">${esc(facts(p))}</p>
         <div class="actions">${hasCompass ? `<button class="btn" type="button" data-aim="${esc(k)}">${ICON.aim}Find in sky</button>` : ''}<button class="btn" type="button" data-cal="${esc(k)}">Add to calendar</button></div></div>` : ''}
     </div>`;
+}
+
+function renderList() {
+  const el = $('#list');
+  if (!S.loc) { el.innerHTML = ''; renderExtras(); return; }
+  const list = visibleList().slice(1);
+  let html = '', lastDay = null;
+  for (const p of list) {
+    const dk = dayKey(shown(p).start);
+    if (dk !== lastDay) { html += `<h2 class="day">${esc(dayWord(shown(p).start))}</h2>`; lastDay = dk; }
+    html += rowHtml(p);
+  }
+  el.innerHTML = html;
+  renderExtras();
+}
+
+const EXTRA_PER_DAY = 5;
+function renderExtras() {
+  const el = $('#extras'), X = S.extra;
+  if (!S.loc || !(S.set.bright || S.set.recent)) { el.innerHTML = ''; return; }
+  const now = Date.now();
+  const what = [S.set.bright && 'bright satellites', S.set.recent && 'recent launches'].filter(Boolean).join(' and ');
+  let note = `${what.charAt(0).toUpperCase() + what.slice(1)}, visible passes above ${extrasPeak()}°.`;
+  if (X.busy) note = `Working out passes for ${what}… ${X.total ? Math.round(100 * X.done / X.total) : 0}%`;
+  else if (X.failed && !X.passes.length) note = `Couldn’t load the list of ${what}. Check your connection, then tap Refresh now in Settings.`;
+  const list = X.passes.filter((p) => p.visible.end > now).sort((a, b) => a.visible.start - b.visible.start);
+  let html = `<h2 class="section-title">Also passing</h2><p class="section-note">${esc(note)}</p>`;
+  if (!X.busy && !list.length && !X.failed) html += `<p class="section-note">None high enough in the next three days.</p>`;
+  const days = [];
+  for (const p of list) {
+    const dk = dayKey(p.visible.start);
+    if (!days.length || days[days.length - 1].dk !== dk) days.push({ dk, ms: p.visible.start, items: [] });
+    days[days.length - 1].items.push(p);
+  }
+  for (const d of days) {
+    const all = !!X.more[d.dk];
+    // collapsed: recent launches always show, then the first few others; an opened row stays on screen
+    let others = 0;
+    const items = all ? d.items : d.items.filter((p) => p.kind === 'recent' || passKey(p) === S.open || (p.kind !== 'recent' && others++ < EXTRA_PER_DAY));
+    html += `<h2 class="day">${esc(dayWord(d.ms))} <span class="day-count">${d.items.length}</span></h2>` + items.map(rowHtml).join('');
+    if (d.items.length > EXTRA_PER_DAY) {
+      html += `<button class="more-btn" type="button" data-more="${d.dk}">${all ? 'Show fewer' : `Show ${d.items.length - items.length} more`}</button>`;
+    }
   }
   el.innerHTML = html;
 }
@@ -1309,7 +1465,7 @@ function render() {
   const l = $('#alertList'); if (l && !$('#alertsPop').hidden) l.innerHTML = upcomingHtml();
 }
 
-function findPass(k) { return S.passes.find((p) => passKey(p) === k); }
+function findPass(k) { return allPasses().find((p) => passKey(p) === k); }
 
 /* ---------- Sheets ---------- */
 const sheet = $('#sheet');
@@ -1344,6 +1500,23 @@ function openConnect(p) {
     <div class="actions"><button class="btn primary" type="button" data-act="connected">Done</button><button class="btn" type="button" data-act="test">Send test alert</button></div>`);
 }
 
+// Can this satellite climb above 10° from the user's latitude? Uses its tilt and height.
+function reachable(e) {
+  if (!S.loc) return true;
+  const inc = e.inc > 90 ? 180 - e.inc : e.inc, Re = 6371, d = Math.PI / 180;
+  const reach = Math.acos(Re * Math.cos(10 * d) / (Re + e.alt)) / d - 10;
+  return Math.abs(S.loc.lat) <= inc + reach;
+}
+function popularHtml() {
+  const mine = new Set(S.sats.map((s) => s.id));
+  return POPULAR.map((e) => `<li><span>${esc(e.name)}<small>${esc(e.note)}${reachable(e) ? '' : ' Doesn’t rise high enough to see from where you are.'}</small></span>
+      ${mine.has(e.id) ? '<span class="small">Added</span>' : `<button class="mini" type="button" data-pop="${e.id}">Add</button>`}</li>`).join('');
+}
+function refreshSatLists() {
+  const a = $('#satList'); if (a) a.innerHTML = satListHtml();
+  const b = $('#popList'); if (b) b.innerHTML = popularHtml();
+}
+
 function satListHtml() {
   return S.sats.map((s) => `<li><span>${esc(friendly(s.id, s.name))}<small class="num">Catalogue ${esc(s.id)}</small></span>
     <button class="mini" type="button" data-remove="${esc(s.id)}">Remove</button></li>`).join('');
@@ -1354,7 +1527,8 @@ function upcomingHtml() {
   const rows = Object.entries(S.alerts).filter(([, a]) => a.startMs > now - 10 * MIN).sort((a, b) => a[1].alertMs - b[1].alertMs);
   if (!rows.length) return `<li><span class="small">No alerts yet. Tap the bell on any pass.</span></li>`;
   return rows.map(([seq, a]) => {
-    const name = (S.recs[a.satId] && S.recs[a.satId].name) || friendly(a.satId, `Catalogue ${a.satId}`);
+    const rec = recFor(a.satId);
+    const name = (rec && rec.name) || friendly(a.satId, `Catalogue ${a.satId}`);
     const sent = a.alertMs <= now;
     const line = sent ? `Sent at ${time(a.alertMs)}, pass at ${time(a.startMs)}` : `Nudge at ${whenTxt(a.alertMs)}, pass at ${time(a.startMs)}`;
     return `<li><span>${esc(name)}<small class="num">${esc(line)}</small></span>
@@ -1423,9 +1597,18 @@ function openSettings(focus) {
     <div class="chips" role="group" aria-label="Minimum height">${[10, 20, 30, 45].map((d) => `<button class="chip" type="button" data-peak="${d}" aria-pressed="${mp === d}">${d}°</button>`).join('')}</div>
 
     <h3>Satellites</h3>
+    <p class="small">Your satellites</p>
     <ul class="list" id="satList">${satListHtml()}</ul>
+    <p class="small sub-head">Popular</p>
+    <ul class="list" id="popList">${popularHtml()}</ul>
+    <p class="small sub-head">Find another</p>
     <form class="field-row" id="addForm"><input class="field" id="addQ" placeholder="Name or catalogue number" autocomplete="off" enterkeyhint="search" aria-label="Find a satellite"><button class="btn" type="submit">Find</button></form>
     <ul class="list" id="results"></ul>
+    <p class="small sub-head">Also passing</p>
+    <div class="toggle-row"><p>Bright satellites<br><span class="small">About 150 of the brightest satellites and rocket stages, shown under Also passing</span></p>
+      <button class="switch" type="button" role="switch" data-act="bright" aria-checked="${!!S.set.bright}" aria-label="Bright satellites"></button></div>
+    <div class="toggle-row"><p>Recent launches<br><span class="small">Launches from the last month, including Starlink trains. Best in the first few days</span></p>
+      <button class="switch" type="button" role="switch" data-act="recent" aria-checked="${!!S.set.recent}" aria-label="Recent launches"></button></div>
 
     <h3 id="locHead">Location</h3>
     <p class="num">${S.loc ? esc(coordTxt(S.loc)) : 'Not set'}</p>
@@ -1494,20 +1677,32 @@ document.addEventListener('click', async (e) => {
   if (d.lead || d.peak) {
     t.parentElement.querySelectorAll('.chip').forEach((c) => c.setAttribute('aria-pressed', String(c === t)));
     if (d.lead) { S.set.lead = +d.lead; saveSet(); resyncLead(); }
-    else { S.set.minPeak = +d.peak; saveSet(); render(); }
+    else { S.set.minPeak = +d.peak; saveSet(); render(); maybeExtras(); }
     return;
   }
+  if (d.more) { S.extra.more[d.more] = !S.extra.more[d.more]; renderExtras(); return; }
   if (d.remove) {
     S.sats = S.sats.filter((s) => s.id !== d.remove); put('sats', S.sats);
-    buildRecs(); compute(); $('#satList').innerHTML = satListHtml(); return;
+    buildRecs(); compute(); refreshSatLists(); return;
+  }
+  if (d.pop) {
+    const e = POPULAR.find((x) => x.id === d.pop);
+    t.disabled = true;
+    const have = S.els[e.id] && Date.now() - S.els[e.id].at < ELEMENT_TTL;
+    const got = have ? S.els[e.id] : await fetchElements(e.id);
+    if (!got) { toast('Couldn’t reach CelesTrak. Check your connection and try again.'); t.disabled = false; return; }
+    S.els[e.id] = got; put('els', S.els);
+    if (!S.sats.some((s) => s.id === e.id)) { S.sats.push({ id: e.id, name: e.name }); put('sats', S.sats); }
+    buildRecs(); compute(); refreshSatLists();
+    toast(reachable(e) ? `${e.name} added` : `${e.name} added. It doesn’t rise high enough to see from here.`);
+    return;
   }
   if (d.add != null) {
     const o = $('#results')._rows[+d.add];
     const id = String(o.NORAD_CAT_ID);
     S.sats.push({ id, name: o.OBJECT_NAME }); put('sats', S.sats);
     S.els[id] = { omm: o, at: Date.now() }; put('els', S.els);
-    buildRecs(); compute();
-    $('#satList').innerHTML = satListHtml();
+    buildRecs(); compute(); refreshSatLists();
     t.replaceWith(Object.assign(document.createElement('span'), { className: 'small', textContent: 'Added' }));
     toast(`${o.OBJECT_NAME} added`);
     return;
@@ -1526,8 +1721,14 @@ document.addEventListener('click', async (e) => {
       t.disabled = false;
       const age = $('#dataAge'); if (age) age.textContent = `Updated ${ago(oldestData())}.`;
       syncAlerts();
+      if (S.set.bright || S.set.recent) loadGroups(true);
       break;
     }
+    case 'bright': case 'recent':
+      S.set[d.act] = !S.set[d.act]; saveSet();
+      t.setAttribute('aria-checked', String(S.set[d.act]));
+      if (S.set[d.act]) loadGroups(false); else computeExtras(true);
+      break;
     case 'install':
       if (S.installEvt) { S.installEvt.prompt(); S.installEvt = null; renderNotices(); }
       break;
@@ -1573,7 +1774,7 @@ document.addEventListener('keydown', (e) => {
 
 async function resyncLead() {
   // re-time any pending alerts to the new reminder lead
-  for (const p of S.passes) {
+  for (const p of allPasses()) {
     const seq = alertFor(p);
     if (seq && alertWin(p).start - S.set.lead * MIN > Date.now()) { try { await publish(seq, p); } catch {} }
   }
