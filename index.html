@@ -343,7 +343,7 @@ dialog.sheet::backdrop { background: rgba(4, 6, 14, .62); }
 <dialog class="sheet" id="sheet" aria-labelledby="sheetTitle"><div class="sheet-in" id="sheetBody"></div></dialog>
 <div class="toast" id="toast" role="status"></div>
 
-<script src="core.js?v=7"></script>
+<script src="core.js?v=8"></script>
 <script>
 (() => {
 'use strict';
@@ -1483,26 +1483,6 @@ async function sendTest() {
   } catch { toast('Couldn’t reach ntfy. Check your connection.'); }
 }
 
-/* ---------- Calendar fallback ---------- */
-function addToCalendar(p) {
-  const w = alertWin(p);
-  const z = (ms) => new Date(ms).toISOString().replace(/[-:]/g, '').replace(/\.\d+/, '');
-  const fold = (s) => s.replace(/([,;\\])/g, '\\$1');
-  const ics = [
-    'BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//Overhead//EN', 'BEGIN:VEVENT',
-    `UID:${passKey(p)}@overhead`, `DTSTAMP:${z(Date.now())}`, `DTSTART:${z(w.start)}`, `DTEND:${z(w.end)}`,
-    `SUMMARY:${fold(p.name)} pass`, `DESCRIPTION:${fold(story(p))}`,
-    'BEGIN:VALARM', 'ACTION:DISPLAY', `DESCRIPTION:${fold(p.name)} pass`, `TRIGGER:-PT${S.set.lead}M`, 'END:VALARM',
-    'END:VEVENT', 'END:VCALENDAR',
-  ].join('\r\n');
-  const name = `${p.name.replace(/\W+/g, '-').toLowerCase()}-pass.ics`;
-  if (isIOS) { location.href = 'data:text/calendar;charset=utf-8,' + encodeURIComponent(ics); return; }
-  const url = URL.createObjectURL(new Blob([ics], { type: 'text/calendar' }));
-  const a = Object.assign(document.createElement('a'), { href: url, download: name });
-  document.body.appendChild(a); a.click(); a.remove();
-  setTimeout(() => URL.revokeObjectURL(url), 4000);
-}
-
 /* ---------- Location ---------- */
 function askLocation(quiet) {
   if (!navigator.geolocation) { if (!quiet) openSettings('location'); return; }
@@ -1592,7 +1572,7 @@ function rowHtml(p) {
         </button>${bellHtml(p)}
       </div>
       ${open ? `<div class="pass-detail">${domeBtn(p)}<p class="story">${esc(story(p))}</p><p class="facts">${esc(facts(p))}</p>
-        <div class="actions">${hasCompass ? `<button class="btn" type="button" data-aim="${esc(k)}">${ICON.aim}Find in sky</button>` : ''}<button class="btn" type="button" data-cal="${esc(k)}">Add to calendar</button></div></div>` : ''}
+        ${hasCompass ? `<div class="actions"><button class="btn" type="button" data-aim="${esc(k)}">${ICON.aim}Find in sky</button></div>` : ''}</div>` : ''}
     </div>`;
 }
 
@@ -1782,6 +1762,17 @@ function togglePop(id, open) {
   $(POPS[id]).setAttribute('aria-expanded', String(show));
 }
 function closePops() { for (const id in POPS) if (!$('#' + id).hidden) togglePop(id, false); }
+const popOpen = () => Object.keys(POPS).some((id) => !$('#' + id).hidden);
+
+// With a panel open, a tap anywhere outside it just closes the panel. It never also presses
+// whatever was underneath (the sky chart, a bell, a pass). The panel icons themselves still
+// switch between panels. Runs first, before any other tap handling.
+document.addEventListener('click', (e) => {
+  if (!popOpen() || e.target.closest('.pop, ' + Object.values(POPS).join(', '))) return;
+  e.preventDefault();
+  e.stopPropagation();
+  closePops();
+}, true);
 
 function openSettings(focus) {
   const lead = S.set.lead, mp = S.set.minPeak;
@@ -1858,7 +1849,6 @@ async function searchSats(q) {
 
 /* ---------- Events ---------- */
 document.addEventListener('click', async (e) => {
-  if (!e.target.closest('.pop, #themeBtn, #alertsBtn, #skyBtn')) closePops();
   const t = e.target.closest('button, a');
   if (!t) return;
   const d = t.dataset;
@@ -1875,7 +1865,6 @@ document.addEventListener('click', async (e) => {
 
   if (d.bell) { const p = findPass(d.bell); if (p) toggleAlert(p, t); return; }
   if (d.open) { S.open = S.open === d.open ? null : d.open; renderList(); return; }
-  if (d.cal) { const p = findPass(d.cal); if (p) addToCalendar(p); return; }
   if (d.mode) { S.set.mode = d.mode; S.open = null; saveSet(); render(); return; }
   if (d.dismiss) { const x = get('dismissed', {}); x[d.dismiss] = 1; put('dismissed', x); renderNotices(); return; }
   if (d.lead || d.peak) {
