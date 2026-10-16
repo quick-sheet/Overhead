@@ -30,14 +30,16 @@ Edit and redeploy. Phones pick up the new version the next time they open the ap
 | File | What it does |
 | --- | --- |
 | `index.html` | The app: layout, styles and behaviour |
-| `core.js` | Orbit maths: SGP4, Sun position, pass search, brightness |
+| `core.js` | Orbit maths: SGP4, Sun and Moon position, pass search, brightness |
 | `extras-worker.js` | Works out bright-satellite and recent-launch passes in the background |
 | `sw.js` | Offline support and updates |
 | `manifest.webmanifest`, icons | Install to home screen |
 
 ## Good to know
 
-- Location never leaves the phone. Orbit data comes from CelesTrak, with a backup source if it's unreachable.
+- Your exact location stays on the phone. Only a rough area (to about 10 km) goes to Open-Meteo for the cloud forecast. Orbit data comes from CelesTrak, with a backup source if it's unreachable.
+- The line under the coordinates sums up tonight's sky: cloud from dusk to 1 am, and how much of the Moon is lit. Tap it for cloud hour by hour, the best hour and Moon rise and set times. Each pass also shows the forecast cloud at its time. The forecast comes from [Open-Meteo](https://open-meteo.com) (free for non-commercial use, no key), at most once an hour, and keeps working offline for a day. The Moon is worked out on the phone.
+- On phones with motion sensors, tapping the sky chart opens Find in sky.
 - ntfy holds scheduled alerts for up to 3 days ahead, which covers the window the app shows.
 - Brightness estimates are shown for the ISS, Tiangong and Hubble only. Other satellites show times and directions.
 - Settings → Satellites has a Popular list, search by name or catalogue number, and two optional extras: Bright satellites (CelesTrak's brightest objects) and Recent launches (including Starlink trains). Extras appear under Also passing.

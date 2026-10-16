@@ -88,11 +88,13 @@ a { color: inherit; }
 .wrap { max-width: 34rem; margin: 0 auto; padding: 0 20px 48px; }
 
 /* Header */
-header { display: flex; align-items: center; justify-content: space-between; padding: 18px 0 6px; }
+header { display: grid; grid-template-columns: 1fr auto; align-items: start; padding: 18px 0 6px; }
 .mark { font-weight: 600; font-size: 17px; letter-spacing: -.01em; }
 .where { display: block; font-size: 13px; color: var(--ink-3); margin-top: 1px; }
 .where:empty { display: none; }
-.tools { display: flex; gap: 4px; margin-right: -8px; }
+.sky-line { grid-column: 1 / -1; justify-self: start; display: block; font-size: 13px; color: var(--ink-2); margin-top: 1px; text-align: left; }
+.sky-line[hidden] { display: none; }
+.tools { display: flex; gap: 4px; margin: -10px -8px 0 0; }
 .icon-btn { width: 44px; height: 44px; border-radius: 50%; display: grid; place-items: center; color: var(--ink-2); }
 .icon-btn:active { background: var(--raise); }
 .icon-btn svg { width: 22px; height: 22px; }
@@ -240,6 +242,20 @@ dialog.sheet::backdrop { background: rgba(4, 6, 14, .62); }
 .theme-opt[aria-pressed="true"] .sw { box-shadow: 0 0 0 2px var(--bg), 0 0 0 4px var(--sun); }
 .theme-note { margin: 12px 4px 0; font-size: 12.5px; color: var(--ink-3); }
 
+/* Tonight's sky panel */
+#skyPop { left: 12px; right: auto; transform-origin: top left; width: min(340px, calc(100% - 24px)); padding: 18px 16px 12px; }
+.sky-sum { margin: 6px 0 0; font-size: 15px; line-height: 1.45; color: var(--ink); }
+.strip { display: flex; gap: 3px; margin: 16px 0 0; }
+.strip > span { flex: 1; min-width: 0; display: grid; gap: 5px; justify-items: center; }
+.cs-h { font-size: 10.5px; color: var(--ink-3); }
+.cs-v { width: 100%; height: 30px; border-radius: 7px; display: grid; place-items: center; font-size: 10.5px; font-weight: 500; letter-spacing: -.02em;
+  background: var(--raise-2); color: var(--ink-3); }
+.part .cs-v { color: var(--ink-2); }
+.clear .cs-v { background: var(--sun-soft); color: var(--sun); }
+.best .cs-v { box-shadow: inset 0 0 0 1.5px var(--sun); }
+.strip-key { margin: 6px 0 0; font-size: 12px; color: var(--ink-3); }
+.sky-moon { margin: 14px 0 4px; font-size: 14px; color: var(--ink-2); }
+
 /* Compass */
 .dome-wrap { position: relative; width: min(100%, 320px); margin: 8px auto 20px; }
 .dome-wrap .dome { margin: 0 auto; }
@@ -247,6 +263,12 @@ dialog.sheet::backdrop { background: rgba(4, 6, 14, .62); }
 .compass-btn svg { width: 22px; height: 22px; }
 .compass-btn[aria-pressed="true"] { color: var(--sun); background: var(--sun-soft); }
 .facing-txt { margin: 10px 0 0; text-align: center; font-size: 13.5px; color: var(--ink-2); min-height: 1.2em; }
+/* Tapping the chart opens Find in sky */
+.dome-btn { display: block; width: min(100%, 320px); margin: 8px auto 20px; border-radius: 50%; transition: transform .15s ease; }
+.dome-btn .dome { width: 100%; margin: 0; }
+.dome-btn:active { transform: scale(.985); }
+.dome-wrap .dome-btn { margin: 0 auto; }
+.pass-detail .dome-btn { width: min(100%, 230px); margin: 4px auto 14px; }
 .dome .facing { fill: var(--sun); }
 
 /* Aiming mode */
@@ -293,9 +315,11 @@ dialog.sheet::backdrop { background: rgba(4, 6, 14, .62); }
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M4 7h10M18 7h2M4 17h2M10 17h10"/><circle cx="16" cy="7" r="2"/><circle cx="8" cy="17" r="2"/></svg>
       </button>
     </div>
+    <button class="sky-line num" id="skyBtn" type="button" hidden aria-expanded="false" aria-haspopup="true" aria-controls="skyPop"></button>
   </header>
   <div class="pop" id="themes" hidden role="group" aria-label="Colour theme"></div>
   <div class="pop" id="alertsPop" hidden role="dialog" aria-label="Upcoming alerts"></div>
+  <div class="pop" id="skyPop" hidden role="dialog" aria-label="Tonight’s sky"></div>
   <div id="notices"></div>
   <main>
     <section class="hero" id="hero" aria-live="polite"></section>
@@ -303,7 +327,7 @@ dialog.sheet::backdrop { background: rgba(4, 6, 14, .62); }
     <div id="list"></div>
     <section id="extras" aria-label="Also passing"></section>
   </main>
-  <p class="foot">Orbits from <a href="https://celestrak.org" target="_blank" rel="noopener">CelesTrak</a>. Alerts by <a href="https://ntfy.sh" target="_blank" rel="noopener">ntfy</a>. Times are for your location and may drift a little for passes more than a day away.</p>
+  <p class="foot">Orbits from <a href="https://celestrak.org" target="_blank" rel="noopener">CelesTrak</a>. Cloud forecast by <a href="https://open-meteo.com" target="_blank" rel="noopener">Open-Meteo</a>. Alerts by <a href="https://ntfy.sh" target="_blank" rel="noopener">ntfy</a>. Times are for your location and may drift a little for passes more than a day away.</p>
 </div>
 
 <div class="aim" id="aim" hidden role="dialog" aria-modal="true" aria-labelledby="aimName">
@@ -354,6 +378,9 @@ const THEMES = [
 const HOURS = 72;
 const ELEMENT_TTL = 12 * 3600e3;
 const MIN = 60e3;
+const METEO = 'https://api.open-meteo.com/v1/forecast';
+const SKY_TTL = 3600e3;          // fetch the cloud forecast at most once an hour
+const SKY_MAX_AGE = 24 * 3600e3; // after a day without an update, stop using it
 
 const UA = navigator.userAgent;
 const isIOS = /iP(hone|ad|od)/.test(UA) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
@@ -389,6 +416,10 @@ const S = {
   flat: true,
   compassAcc: null,
   lastOrient: 0,
+  sky: get('sky', null),
+  skyBusy: false,
+  skyFailAt: 0,
+  night: null,
 };
 if (!S.set.theme) S.set.theme = S.set.night ? 'red' : 'twilight';
 delete S.set.night;
@@ -537,6 +568,7 @@ function compute() {
   S.computedAt = now;
   render();
   maybeExtras();
+  fetchSky(false);
 }
 
 /* ---------- Also passing: bright satellites and recent launches ---------- */
@@ -649,6 +681,157 @@ function pathFor(p) {
   return S.paths.get(k);
 }
 
+/* ---------- Tonight's sky: cloud forecast and Moon ---------- */
+const skyKey = () => `${S.loc.lat.toFixed(1)},${S.loc.lon.toFixed(1)}`;   // a rough area, about 10 km across
+// The saved forecast, if it's for this area and less than a day old
+function skyData() {
+  const c = S.sky;
+  return c && S.loc && c.key === skyKey() && Date.now() - c.at < SKY_MAX_AGE ? c : null;
+}
+function cloudAt(ms) {
+  const c = skyData();
+  if (!c) return null;
+  const i = Math.round((ms - c.t0) / c.step);
+  return i >= 0 && i < c.cc.length && c.cc[i] != null ? c.cc[i] : null;
+}
+const cloudWord = (cc) => (cc < 15 ? 'Clear' : cc < 35 ? 'Mostly clear' : cc < 65 ? 'Partly cloudy' : cc < 85 ? 'Mostly cloudy' : 'Cloudy');
+
+async function fetchSky(force) {
+  if (!S.loc || S.skyBusy) return;
+  const key = skyKey(), c = S.sky;
+  if (!force && c && c.key === key && Date.now() - c.at < SKY_TTL) return;
+  if (!force && Date.now() - S.skyFailAt < 5 * MIN) return;
+  S.skyBusy = true;
+  refreshSkyPop();
+  try {
+    const [lat, lon] = key.split(',');
+    const r = await fetch(`${METEO}?latitude=${lat}&longitude=${lon}&hourly=cloud_cover&timeformat=unixtime&timezone=auto&forecast_days=4`, { cache: 'no-store' });
+    if (!r.ok) throw 0;
+    const h = (await r.json()).hourly || {};
+    if (!Array.isArray(h.time) || h.time.length < 2 || !Array.isArray(h.cloud_cover)) throw 0;
+    S.sky = { at: Date.now(), key, t0: h.time[0] * 1000, step: (h.time[1] - h.time[0]) * 1000,
+      cc: h.cloud_cover.map((v) => (typeof v === 'number' ? Math.round(v) : null)) };
+    put('sky', S.sky);
+    S.skyFailAt = 0;
+  } catch { S.skyFailAt = Date.now(); }
+  S.skyBusy = false;
+  S.night = null;
+  render();
+  refreshSkyPop();
+}
+
+// Tonight's dark hours (Sun below -6°): from dusk, or from now if it's already dark, until dawn
+function darkWindow(now) {
+  const o = obs(), step = 10 * MIN, dark = (t) => O.sunAltitude(o, t) <= -6;
+  let start = null;
+  for (let t = now; t < now + 30 * 3600e3; t += step) if (dark(t)) { start = t; break; }
+  if (start == null) {
+    // no proper darkness, far north in summer: use 22:00 to 02:00
+    const d = new Date(now); d.setHours(22, 0, 0, 0);
+    if (d.getTime() - 4 * 3600e3 > now) d.setDate(d.getDate() - 1);
+    start = Math.max(now, d.getTime());
+    return { start, end: d.getTime() + 4 * 3600e3 };
+  }
+  let end = start + 24 * 3600e3;
+  for (let t = start + step; t < start + 24 * 3600e3; t += step) if (!dark(t)) { end = t; break; }
+  return { start, end };
+}
+
+// Forecast hours covering a stretch of time. fromNow: include the hour already under way.
+function hoursIn(c, a, b, fromNow) {
+  const out = [];
+  if (!c) return out;
+  const x = (a - c.t0) / c.step;
+  const i0 = Math.max(0, fromNow ? Math.floor(x) : Math.round(x)), i1 = Math.min(c.cc.length - 1, Math.ceil((b - c.t0) / c.step) - 1);
+  for (let i = i0; i <= i1; i++) out.push({ t: c.t0 + i * c.step, cc: c.cc[i] });
+  return out;
+}
+
+function tonight() {
+  const now = Date.now(), key = `${S.loc.lat},${S.loc.lon}`;
+  if (S.night && S.night.key === key && now - S.night.made < 5 * MIN) return S.night;
+  const w = darkWindow(now);
+  // The headline covers dusk to 1 am, when most people look; at least the next few hours once it's late
+  const one = new Date(w.start); one.setHours(1, 0, 0, 0);
+  if (one.getTime() <= w.start) one.setDate(one.getDate() + 1);
+  const a = w.start;
+  let b = Math.min(w.end, one.getTime());
+  if (b - a < 2 * 3600e3) b = Math.min(w.end, a + 3 * 3600e3);
+  const hr = new Date(a).getHours(), already = w.start === now;
+  const c = skyData();
+  const head = hoursIn(c, a, b, already).map((h) => h.cc).filter((v) => v != null);
+  let word = null;
+  if (head.length) {
+    const avg = head.reduce((s, v) => s + v, 0) / head.length, min = Math.min(...head);
+    word = avg < 15 ? 'Clear' : avg < 35 ? 'Mostly clear' : avg < 65 ? 'Clear spells' : avg < 85 ? (min <= 30 ? 'Clear spells' : 'Mostly cloudy') : 'Cloudy';
+  }
+  const hours = hoursIn(c, w.start, w.end, already).slice(0, 16);
+  let best = null;
+  for (const h of hours) if (h.cc != null && (!best || h.cc < best.cc)) best = h;
+  // only worth pointing out when the night is mixed: some cloud, but a clearer hour in it
+  const vals = hours.map((h) => h.cc).filter((v) => v != null);
+  if (!vals.length || Math.max(...vals) < 15 || Math.min(...vals) >= 65) best = null;
+  S.night = {
+    made: now, key, label: hr >= 3 && hr < 12 ? 'Before dawn' : 'Tonight', start: w.start, end: w.end, word, hours, best,
+    already, moon: O.moon(obs(), (a + b) / 2),
+  };
+  return S.night;
+}
+
+const moonShort = (i) => (i < 0.03 ? 'new Moon' : i > 0.97 ? 'full Moon' : `Moon ${Math.round(i * 100)}%`);
+
+function renderSky() {
+  const btn = $('#skyBtn');
+  if (!S.loc) { btn.hidden = true; return; }
+  const n = tonight();
+  const txt = `${n.label}: ${n.word ? n.word.toLowerCase() + ', ' : ''}${moonShort(n.moon.illum)}`;
+  btn.hidden = false;
+  if (btn.textContent !== txt) btn.textContent = txt;
+  btn.setAttribute('aria-label', `${txt}. Show details`);
+}
+
+function moonLine(n) {
+  const o = obs(), i = n.moon.illum;
+  const lit = i < 0.03 ? 'New Moon' : i > 0.97 ? 'Full Moon' : `Moon ${Math.round(i * 100)}% lit`;
+  const ev = O.moonEvents(o, n.start, n.end).slice(0, 2);
+  const span = n.already ? 'until dawn' : 'all night';
+  if (!ev.length) return O.moon(o, n.start).alt > -0.83 ? `${lit}, up ${span}.` : `${lit}, below the horizon ${span}.`;
+  return `${lit}, ${ev.map((e) => `${e.type === 'rise' ? 'rises' : 'sets'} at ${time(e.t)}`).join(' and ')}.`;
+}
+
+function skyPopHtml() {
+  const n = tonight(), c = skyData();
+  const title = n.label === 'Tonight' ? 'Tonight’s sky' : 'Before dawn';
+  let body;
+  if (n.word && n.hours.length) {
+    const vals = n.hours.map((h) => h.cc).filter((v) => v != null);
+    const span = n.already ? 'until dawn' : 'all night';
+    const sum = Math.max(...vals) < 15 ? `Clear ${span}.` : Math.min(...vals) >= 85 ? `Cloudy ${span}.`
+      : n.best ? `${n.word}. Best around ${time(n.best.t)}, ${n.best.cc}% cloud.` : `${n.word} ${span}.`;
+    const cells = n.hours.map((h) => {
+      const hh = new Date(h.t).getHours();
+      const lab = h12 ? String(((hh + 11) % 12) + 1) : String(hh).padStart(2, '0');
+      const cls = h.cc == null ? '' : h.cc < 35 ? 'clear' : h.cc < 70 ? 'part' : '';
+      const isBest = n.best && h.t === n.best.t;
+      return `<span class="${cls}${isBest ? ' best' : ''}"><span class="cs-h num">${lab}</span><span class="cs-v num">${h.cc == null ? '–' : h.cc}</span></span>`;
+    }).join('');
+    const label = 'Cloud cover by hour: ' + n.hours.map((h) => `${time(h.t)} ${h.cc == null ? 'unknown' : h.cc + '%'}`).join(', ');
+    body = `<p class="sky-sum">${esc(sum)}</p>
+      <div class="strip" role="img" aria-label="${esc(label)}">${cells}</div>
+      <p class="strip-key">Cloud cover by hour, %</p>`;
+  } else if (S.skyBusy) {
+    body = `<p class="sky-sum">Getting the cloud forecast…</p>`;
+  } else {
+    body = `<p class="sky-sum">No cloud forecast at the moment. Check your connection.</p>`;
+  }
+  const foot = c ? `<span class="small">Forecast updated ${ago(c.at)}</span>`
+    : `<button class="link-btn" type="button" data-act="sky-retry">Try again</button>`;
+  return `<h2 class="pop-title">${title}</h2>${body}
+    <p class="sky-moon">${esc(moonLine(n))}</p>
+    <div class="pop-foot">${foot}<a class="link-btn" href="https://open-meteo.com" target="_blank" rel="noopener">Open-Meteo</a></div>`;
+}
+function refreshSkyPop() { const p = $('#skyPop'); if (p && !p.hidden && S.loc) p.innerHTML = skyPopHtml(); }
+
 /* ---------- Words ---------- */
 function story(p) {
   const w = (az) => O.compassWords(az);
@@ -675,6 +858,8 @@ function facts(p) {
   const bits = [];
   if (v.mag != null) bits.push(`${brightWord(v.mag)}, about ${magTxt(v.mag)} magnitude`);
   bits.push(`Visible for ${Math.max(1, Math.round((v.end - v.start) / MIN))} min`);
+  const cc = cloudAt(v.max.t);
+  if (cc != null) bits.push(`${cloudWord(cc)} at ${time(v.start)}, ${cc}% cloud`);
   if (p.kind) bits.push(`Catalogue ${p.satId}`);   // tells same-named rocket stages apart
   return bits.join('. ') + '.';
 }
@@ -749,11 +934,18 @@ const hasCompass = typeof window.DeviceOrientationEvent !== 'undefined';
 const needsMotionPermission = hasCompass && typeof DeviceOrientationEvent.requestPermission === 'function';
 let compassEvt = null, raf = 0, compassWatch = 0;
 
+// On phones with motion sensors the chart itself opens Find in sky
+function domeBtn(p, live) {
+  const svg = domeSvg(p, live);
+  if (!p || !hasCompass) return svg;
+  return `<button class="dome-btn" type="button" data-aim="${esc(passKey(p))}" aria-label="Find ${esc(p.name)} in the sky">${svg}</button>`;
+}
+
 function heroDome(p, live) {
   const btn = hasCompass ? `<button class="compass-btn" type="button" data-act="compass" aria-pressed="${S.compassOn}"
     aria-label="${S.compassOn ? 'Stop turning the chart with the compass' : 'Turn the chart to match the way you are facing'}">${ICON.compass}</button>` : '';
   const cap = S.compassOn ? `<p class="facing-txt" id="facing">${esc(facingTxt())}</p>` : '';
-  return `<div class="dome-wrap">${domeSvg(p, live)}${btn}${cap}</div>`;
+  return `<div class="dome-wrap">${domeBtn(p, live)}${btn}${cap}</div>`;
 }
 
 function facingTxt() {
@@ -1330,7 +1522,7 @@ function renderHero() {
   if (!S.loc) {
     el.innerHTML = heroDome(null) + `
       <h1 class="empty-title">Where are you?</h1>
-      <p class="empty-body">Overhead works out which satellites pass over your exact spot. Your location stays on this phone.</p>
+      <p class="empty-body">Overhead works out which satellites pass over your exact spot. Your location stays on this phone. Only a rough area is sent out, to fetch the cloud forecast.</p>
       <div class="actions"><button class="btn primary" type="button" data-act="locate">Use my location</button>
       <button class="link-btn" type="button" data-act="manual">Enter coordinates</button></div>`;
     return;
@@ -1390,7 +1582,7 @@ function rowHtml(p) {
           <span class="pass-sub num">${esc(rowSub(p))}</span>
         </button>${bellHtml(p)}
       </div>
-      ${open ? `<div class="pass-detail">${domeSvg(p)}<p class="story">${esc(story(p))}</p><p class="facts">${esc(facts(p))}</p>
+      ${open ? `<div class="pass-detail">${domeBtn(p)}<p class="story">${esc(story(p))}</p><p class="facts">${esc(facts(p))}</p>
         <div class="actions">${hasCompass ? `<button class="btn" type="button" data-aim="${esc(k)}">${ICON.aim}Find in sky</button>` : ''}<button class="btn" type="button" data-cal="${esc(k)}">Add to calendar</button></div></div>` : ''}
     </div>`;
 }
@@ -1457,6 +1649,7 @@ function renderNotices() {
 function render() {
   $('#where').textContent = S.loc ? coordTxt(S.loc) : '';
   $('#where').setAttribute('aria-label', S.loc ? `Location ${coordTxt(S.loc)}. Change in settings` : '');
+  renderSky();
   renderNotices();
   renderHero();
   renderSwitch();
@@ -1565,14 +1758,16 @@ function alertsPopHtml() {
     <div class="pop-foot"><button class="link-btn" type="button" data-act="test">Send test alert</button><span class="small">${S.set.lead} min before each pass</span></div>`;
 }
 
-const POPS = { themes: '#themeBtn', alertsPop: '#alertsBtn' };
+const POPS = { themes: '#themeBtn', alertsPop: '#alertsBtn', skyPop: '#skyBtn' };
 function togglePop(id, open) {
   const pop = $('#' + id);
   const show = open == null ? pop.hidden : open;
   for (const other in POPS) if (other !== id && !$('#' + other).hidden) togglePop(other, false);
   if (show) {
-    pop.innerHTML = id === 'themes' ? themeGridHtml() : alertsPopHtml();
+    if (id === 'skyPop') fetchSky(false);   // marks itself busy straight away if a fetch is due
+    pop.innerHTML = id === 'themes' ? themeGridHtml() : id === 'skyPop' ? skyPopHtml() : alertsPopHtml();
     if (id === 'alertsPop' && S.connected && S.topic) syncAlerts().then(refreshAlertList);
+    if (id === 'skyPop') { const b = $('#skyBtn'); pop.style.top = `${b.offsetTop + b.offsetHeight + 10}px`; }
   }
   pop.hidden = !show;
   $(POPS[id]).setAttribute('aria-expanded', String(show));
@@ -1654,7 +1849,7 @@ async function searchSats(q) {
 
 /* ---------- Events ---------- */
 document.addEventListener('click', async (e) => {
-  if (!e.target.closest('.pop, #themeBtn, #alertsBtn')) closePops();
+  if (!e.target.closest('.pop, #themeBtn, #alertsBtn, #skyBtn')) closePops();
   const t = e.target.closest('button, a');
   if (!t) return;
   const d = t.dataset;
@@ -1738,6 +1933,7 @@ document.addEventListener('click', async (e) => {
       catch { toast('Press and hold the code to copy it'); }
       break;
     case 'test': sendTest(); break;
+    case 'sky-retry': fetchSky(true); break;
     case 'connected':
       S.connected = true; put('connected', true); closeSheet();
       if (pendingPass) { const p = pendingPass; pendingPass = null; const fresh = findPass(passKey(p)) || p; toggleAlert(fresh, null); }
@@ -1767,6 +1963,8 @@ $('#settingsBtn').addEventListener('click', () => openSettings());
 $('#where').addEventListener('click', () => openSettings('location'));
 $('#themeBtn').addEventListener('click', () => togglePop('themes'));
 $('#alertsBtn').addEventListener('click', () => togglePop('alertsPop'));
+$('#skyBtn').addEventListener('click', () => togglePop('skyPop'));
+window.addEventListener('online', () => fetchSky(false));
 document.addEventListener('keydown', (e) => {
   if (e.key !== 'Escape') return;
   for (const id in POPS) if (!$('#' + id).hidden) { togglePop(id, false); $(POPS[id]).focus(); }
@@ -1794,6 +1992,7 @@ setInterval(() => {
   if (now - lastTick > 15e3) {
     lastTick = now;
     document.querySelectorAll('[data-until]').forEach((n) => { n.textContent = until(+n.dataset.until).replace(/^in/, 'In'); });
+    renderSky();
   }
 }, 1000);
 

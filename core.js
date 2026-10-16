@@ -301,6 +301,52 @@
     return look(obs, rotZ(sunEci(jd), gmst(jd))).el;
   }
 
+  // Low-precision Moon position, equatorial of date (km). Good to ~0.3°, plenty for rise, set and phase.
+  function moonEci(jd) {
+    const T = (jd - 2451545.0) / 36525, d = DEG;
+    const L = 218.32 + 481267.881 * T
+      + 6.29 * Math.sin((135.0 + 477198.87 * T) * d) - 1.27 * Math.sin((259.3 - 413335.36 * T) * d)
+      + 0.66 * Math.sin((235.7 + 890534.22 * T) * d) + 0.21 * Math.sin((269.9 + 954397.74 * T) * d)
+      - 0.19 * Math.sin((357.5 + 35999.05 * T) * d) - 0.11 * Math.sin((186.5 + 966404.03 * T) * d);
+    const B = 5.13 * Math.sin((93.3 + 483202.02 * T) * d) + 0.28 * Math.sin((228.2 + 960400.89 * T) * d)
+      - 0.28 * Math.sin((318.3 + 6003.15 * T) * d) - 0.17 * Math.sin((217.6 - 407332.21 * T) * d);
+    const P = 0.9508 + 0.0518 * Math.cos((135.0 + 477198.87 * T) * d) + 0.0095 * Math.cos((259.3 - 413335.36 * T) * d)
+      + 0.0078 * Math.cos((235.7 + 890534.22 * T) * d) + 0.0028 * Math.cos((269.9 + 954397.74 * T) * d);
+    const r = 6378.14 / Math.sin(P * d);
+    const lam = L * d, bet = B * d, eps = (23.439 - 0.0000004 * (jd - 2451545.0)) * d;
+    const xe = r * Math.cos(bet) * Math.cos(lam), ye = r * Math.cos(bet) * Math.sin(lam), ze = r * Math.sin(bet);
+    return [xe, ye * Math.cos(eps) - ze * Math.sin(eps), ye * Math.sin(eps) + ze * Math.cos(eps)];
+  }
+
+  // Moon as seen from the observer: altitude, azimuth, fraction lit, waxing or waning
+  function moon(obs, ms) {
+    const lit = (t) => {
+      const jd = jdFromMs(t), m = moonEci(jd), s = sunEci(jd);
+      const c = (m[0] * s[0] + m[1] * s[1] + m[2] * s[2]) / (Math.hypot(...m) * Math.hypot(...s));
+      return (1 - c) / 2;
+    };
+    const jd = jdFromMs(ms);
+    const la = look(obs, rotZ(moonEci(jd), gmst(jd)));
+    const illum = lit(ms);
+    return { alt: la.el, az: la.az, dist: la.range, illum, waxing: lit(ms + 6 * 3600e3) > illum };
+  }
+
+  // Moonrise and moonset between two times (centre at -0.83°, allowing for refraction and size)
+  function moonEvents(obs, fromMs, toMs) {
+    const h0 = -0.83, f = (t) => moon(obs, t).alt - h0, out = [];
+    let t = fromMs, v = f(t);
+    while (t < toMs) {
+      const nt = t + 10 * 60000, nv = f(nt);
+      if ((v < 0) !== (nv < 0)) {
+        let a = t, b = nt, va = v;
+        while (b - a > 30000) { const m = (a + b) / 2, vm = f(m); if ((vm < 0) === (va < 0)) { a = m; va = vm; } else b = m; }
+        out.push({ type: v < 0 ? 'rise' : 'set', t: Math.round((a + b) / 2) });
+      }
+      t = nt; v = nv;
+    }
+    return out;
+  }
+
   /* ---------- Satellite state seen from an observer ---------- */
 
   // Typical standard magnitudes (1000 km, half lit). Approximate.
@@ -471,7 +517,7 @@
   const compassWords = (az) => WORDS[idx(az)];
 
   const api = {
-    fromOMM, fromTLE, init, sgp4, gmst, observer, look, sunEci, sunAltitude, state,
+    fromOMM, fromTLE, init, sgp4, gmst, observer, look, sunEci, sunAltitude, moonEci, moon, moonEvents, state,
     findPasses, path, compass, compassWords, jdFromMs, STD_MAG,
   };
   if (typeof module !== 'undefined' && module.exports) module.exports = api;

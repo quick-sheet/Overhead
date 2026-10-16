@@ -1,5 +1,5 @@
 /* Overhead service worker: works offline, picks up updates on the next open. */
-const CACHE = 'overhead-v5';
+const CACHE = 'overhead-v6';
 const SHELL = ['./', 'index.html', 'core.js', 'extras-worker.js', 'manifest.webmanifest', 'icon.svg', 'icon-192.png', 'icon-512.png', 'apple-touch-icon.png'];
 
 self.addEventListener('install', (e) => {
@@ -50,5 +50,5 @@ self.addEventListener('fetch', (e) => {
       return res;
     }));
   }
-  // Everything else (orbit data, ntfy) goes straight to the network
+  // Everything else (orbit data, cloud forecast, ntfy) goes straight to the network
 });
