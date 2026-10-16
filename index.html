@@ -15,7 +15,7 @@
 <meta name="apple-mobile-web-app-title" content="Overhead">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;500;600&family=Newsreader:ital,opsz,wght@1,6..72,400&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;500;600&display=swap">
 <style>
 :root {
   --bg: #0F1528;
@@ -32,23 +32,42 @@
   --dome-in: #0A0F21;
   --dome-out: #1A2448;
   --sans: "Hanken Grotesk", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
-  --serif: "Newsreader", Georgia, "Times New Roman", serif;
   color-scheme: dark;
 }
-:root[data-night] {
-  --bg: #0C0404;
-  --raise: #160707;
-  --raise-2: #1F0A0A;
-  --line: rgba(255, 90, 70, .12);
-  --line-2: rgba(255, 90, 70, .22);
-  --ink: #E2573F;
-  --ink-2: #A9412F;
-  --ink-3: #74291F;
-  --sun: #FF5B3D;
-  --sun-soft: rgba(255, 91, 61, .18);
-  --on-sun: #1A0503;
-  --dome-in: #070202;
-  --dome-out: #1E0808;
+:root[data-theme="red"] {
+  --bg: #0C0404; --raise: #160707; --raise-2: #1F0A0A;
+  --line: rgba(255, 90, 70, .12); --line-2: rgba(255, 90, 70, .22);
+  --ink: #E2573F; --ink-2: #A9412F; --ink-3: #74291F;
+  --sun: #FF5B3D; --sun-soft: rgba(255, 91, 61, .18); --on-sun: #1A0503;
+  --dome-in: #070202; --dome-out: #1E0808;
+}
+:root[data-theme="amber"] {
+  --bg: #0D0904; --raise: #171008; --raise-2: #20170C;
+  --line: rgba(255, 190, 110, .10); --line-2: rgba(255, 190, 110, .20);
+  --ink: #EBC48A; --ink-2: #A98A5C; --ink-3: #6F5A3B;
+  --sun: #FFB04A; --sun-soft: rgba(255, 176, 74, .18); --on-sun: #1A0F02;
+  --dome-in: #080502; --dome-out: #241809;
+}
+:root[data-theme="sea"] {
+  --bg: #06121A; --raise: #0B1C26; --raise-2: #102632;
+  --line: rgba(150, 220, 230, .09); --line-2: rgba(150, 220, 230, .18);
+  --ink: #D6E9EC; --ink-2: #8EAEB4; --ink-3: #5A7880;
+  --sun: #6FD9D0; --sun-soft: rgba(111, 217, 208, .16); --on-sun: #031513;
+  --dome-in: #030B10; --dome-out: #0F2A38;
+}
+:root[data-theme="aurora"] {
+  --bg: #07110D; --raise: #0C1A14; --raise-2: #11241B;
+  --line: rgba(150, 235, 190, .09); --line-2: rgba(150, 235, 190, .18);
+  --ink: #D7EBDF; --ink-2: #8DAA9A; --ink-3: #5A7566;
+  --sun: #86E3A8; --sun-soft: rgba(134, 227, 168, .16); --on-sun: #04140B;
+  --dome-in: #040A07; --dome-out: #12291E;
+}
+:root[data-theme="dusk"] {
+  --bg: #110D1A; --raise: #1A1426; --raise-2: #221A31;
+  --line: rgba(210, 190, 255, .09); --line-2: rgba(210, 190, 255, .18);
+  --ink: #E8E1F4; --ink-2: #A79CBD; --ink-3: #6E6485;
+  --sun: #F2A7C8; --sun-soft: rgba(242, 167, 200, .16); --on-sun: #1E0812;
+  --dome-in: #0A0712; --dome-out: #261C3A;
 }
 * { box-sizing: border-box; }
 html { -webkit-text-size-adjust: 100%; }
@@ -105,7 +124,7 @@ header { display: flex; align-items: center; justify-content: space-between; pad
 .sat-name { margin: 0; font-size: 26px; line-height: 1.15; font-weight: 600; letter-spacing: -.015em; }
 .when { margin: 4px 0 0; font-size: 15px; color: var(--ink-2); }
 .when strong { color: var(--ink); font-weight: 500; }
-.story { margin: 14px 0 0; font: italic 400 19px/1.42 var(--serif); color: var(--ink); max-width: 30em; }
+.story { margin: 14px 0 0; font-size: 18px; line-height: 1.5; color: var(--ink); max-width: 30em; }
 .facts { margin: 10px 0 0; font-size: 14px; color: var(--ink-2); }
 .empty-title { margin: 0; font-size: 22px; font-weight: 600; letter-spacing: -.01em; }
 .empty-body { margin: 8px 0 0; color: var(--ink-2); max-width: 28em; }
@@ -142,7 +161,7 @@ header { display: flex; align-items: center; justify-content: space-between; pad
 .pass.dim .pass-time, .pass.dim .pass-name { color: var(--ink-2); }
 .pass-detail { padding: 0 0 20px; }
 .pass-detail .dome { width: min(100%, 230px); margin: 4px auto 14px; }
-.pass-detail .story { font-size: 17px; margin-top: 0; }
+.pass-detail .story { font-size: 16px; margin-top: 0; }
 .pass-detail .actions { margin-top: 12px; }
 .pass-detail .btn { height: 38px; font-size: 14px; padding: 0 14px; }
 .foot { margin-top: 36px; font-size: 12.5px; color: var(--ink-3); }
@@ -186,6 +205,29 @@ dialog.sheet::backdrop { background: rgba(4, 6, 14, .62); }
 .switch[aria-checked="true"] { background: var(--sun); }
 .switch[aria-checked="true"]::after { transform: translateX(20px); background: var(--on-sun); }
 
+/* Theme picker */
+.wrap { position: relative; }
+.themes { position: absolute; top: 64px; right: 12px; z-index: 5; width: min(300px, calc(100% - 24px)); padding: 16px 12px 12px; border-radius: 18px;
+  background: var(--raise); border: 1px solid var(--line-2); box-shadow: 0 18px 40px rgba(0, 0, 0, .45); animation: drop .18s ease-out; }
+.themes[hidden] { display: none; }
+@keyframes drop { from { opacity: 0; transform: translateY(-6px); } }
+.theme-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px 6px; }
+.theme-opt { display: grid; justify-items: center; gap: 6px; padding: 4px 0; font-size: 12.5px; color: var(--ink-2); }
+.theme-opt[aria-pressed="true"] { color: var(--ink); }
+.sw { width: 42px; height: 42px; border-radius: 50%; border: 1px solid var(--line-2);
+  background: radial-gradient(circle, var(--b) 0 6px, transparent 7px), radial-gradient(circle at 50% 35%, var(--c), var(--a)); }
+.theme-opt[aria-pressed="true"] .sw { box-shadow: 0 0 0 2px var(--bg), 0 0 0 4px var(--sun); }
+.theme-note { margin: 12px 4px 0; font-size: 12.5px; color: var(--ink-3); }
+
+/* Compass */
+.dome-wrap { position: relative; width: min(100%, 320px); margin: 8px auto 20px; }
+.dome-wrap .dome { margin: 0 auto; }
+.compass-btn { position: absolute; top: -4px; right: -8px; width: 44px; height: 44px; border-radius: 50%; display: grid; place-items: center; color: var(--ink-3); }
+.compass-btn svg { width: 22px; height: 22px; }
+.compass-btn[aria-pressed="true"] { color: var(--sun); background: var(--sun-soft); }
+.facing-txt { margin: 10px 0 0; text-align: center; font-size: 13.5px; color: var(--ink-2); min-height: 1.2em; }
+.dome .facing { fill: var(--sun); }
+
 /* Toast */
 .toast { position: fixed; left: 50%; bottom: calc(24px + env(safe-area-inset-bottom)); transform: translate(-50%, 20px); opacity: 0; pointer-events: none;
   background: var(--ink); color: var(--bg); padding: 10px 18px; border-radius: 22px; font-size: 14px; font-weight: 500; transition: opacity .2s, transform .2s; max-width: calc(100% - 40px); text-align: center; z-index: 10; }
@@ -204,7 +246,7 @@ dialog.sheet::backdrop { background: rgba(4, 6, 14, .62); }
       <button class="where num" id="where" type="button"></button>
     </div>
     <div class="tools">
-      <button class="icon-btn" id="nightBtn" type="button" aria-pressed="false" aria-label="Night vision">
+      <button class="icon-btn" id="themeBtn" type="button" aria-expanded="false" aria-haspopup="true" aria-controls="themes" aria-label="Colour theme">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M2.5 12s3.5-6 9.5-6 9.5 6 9.5 6-3.5 6-9.5 6-9.5-6-9.5-6Z"/><circle cx="12" cy="12" r="2.6" fill="currentColor" stroke="none"/></svg>
       </button>
       <button class="icon-btn" id="settingsBtn" type="button" aria-label="Settings">
@@ -212,6 +254,7 @@ dialog.sheet::backdrop { background: rgba(4, 6, 14, .62); }
       </button>
     </div>
   </header>
+  <div class="themes" id="themes" hidden role="group" aria-label="Colour theme"></div>
   <div id="notices"></div>
   <main>
     <section class="hero" id="hero" aria-live="polite"></section>
@@ -238,6 +281,14 @@ const PLAY = 'https://play.google.com/store/apps/details?id=io.heckel.ntfy';
 const APPSTORE = 'https://apps.apple.com/app/ntfy/id1625396347';
 const DEFAULT_SATS = [{ id: '25544', name: 'ISS' }, { id: '48274', name: 'Tiangong' }];
 const FRIENDLY = { '25544': 'ISS', '48274': 'Tiangong', '20580': 'Hubble' };
+const THEMES = [
+  { id: 'twilight', name: 'Twilight', bg: '#0F1528', dome: '#1A2448', accent: '#F2C063' },
+  { id: 'red', name: 'Night red', bg: '#0C0404', dome: '#1E0808', accent: '#FF5B3D' },
+  { id: 'amber', name: 'Amber', bg: '#0D0904', dome: '#241809', accent: '#FFB04A' },
+  { id: 'sea', name: 'Deep sea', bg: '#06121A', dome: '#0F2A38', accent: '#6FD9D0' },
+  { id: 'aurora', name: 'Aurora', bg: '#07110D', dome: '#12291E', accent: '#86E3A8' },
+  { id: 'dusk', name: 'Dusk', bg: '#110D1A', dome: '#261C3A', accent: '#F2A7C8' },
+];
 const HOURS = 72;
 const ELEMENT_TTL = 12 * 3600e3;
 const MIN = 60e3;
@@ -255,7 +306,7 @@ const S = {
   loc: get('loc', null),
   sats: get('sats', DEFAULT_SATS),
   els: get('els', {}),
-  set: Object.assign({ lead: 10, minPeak: 10, mode: 'visible', night: false }, get('settings', {})),
+  set: Object.assign({ lead: 10, minPeak: 10, mode: 'visible', theme: null, compass: false }, get('settings', {})),
   topic: get('topic', null),
   connected: get('connected', false),
   alerts: get('alerts', {}),
@@ -267,7 +318,17 @@ const S = {
   fetchFailed: false,
   paths: new Map(),
   installEvt: null,
+  syncOk: null,
+  syncedAt: 0,
+  heading: 0,
+  target: null,
+  compassOn: false,
+  flat: true,
+  compassAcc: null,
+  lastOrient: 0,
 };
+if (!S.set.theme) S.set.theme = S.set.night ? 'red' : 'twilight';
+delete S.set.night;
 const saveSet = () => put('settings', S.set);
 
 /* ---------- Helpers ---------- */
@@ -303,6 +364,13 @@ function ago(ms) {
   if (h < 48) return `${h} h ago`;
   return `${Math.round(h / 24)} days ago`;
 }
+// "05:18 tomorrow", "12:31", "06:13 on Monday 19 October"
+function whenTxt(ms) {
+  const dw = dayWord(ms);
+  if (dw === 'Today') return time(ms);
+  if (dw === 'Tomorrow') return `${time(ms)} tomorrow`;
+  return `${time(ms)} on ${dw}`;
+}
 const magTxt = (m) => (m < 0 ? '−' : '') + Math.abs(m).toFixed(1);
 function brightWord(m) {
   if (m == null) return '';
@@ -321,13 +389,14 @@ function toast(msg) {
   t.textContent = msg;
   t.classList.add('show');
   clearTimeout(toastTimer);
-  toastTimer = setTimeout(() => t.classList.remove('show'), 2800);
+  toastTimer = setTimeout(() => t.classList.remove('show'), Math.max(2600, msg.length * 55));
 }
 
 const ICON = {
   bellOff: '<svg class="off" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M6 10a6 6 0 1 1 12 0c0 4.5 1.5 6 2 7H4c.5-1 2-2.5 2-7Z"/><path d="M10 20a2.2 2.2 0 0 0 4 0"/></svg>',
   bellOn: '<svg class="on" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M6 10a6 6 0 1 1 12 0c0 4.5 1.5 6 2 7H4c.5-1 2-2.5 2-7Z"/><path d="M10 20a2.2 2.2 0 0 0 4 0" fill="none"/></svg>',
   x: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M6 6l12 12M18 6 6 18"/></svg>',
+  compass: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 5.5 14.2 12h-4.4Z" fill="currentColor"/><path d="M9.8 12h4.4L12 18.5Z"/></svg>',
 };
 
 /* ---------- Orbit data ---------- */
@@ -493,13 +562,139 @@ function domeSvg(p, live) {
       body += `<circle class="now-ring" cx="${lx.toFixed(1)}" cy="${ly.toFixed(1)}" r="5"/><circle class="now" cx="${lx.toFixed(1)}" cy="${ly.toFixed(1)}" r="4.5"/>`;
     }
   }
-  return `<svg class="dome" viewBox="-112 -112 224 224" role="img" aria-label="Sky chart: north at the top, east to the right, the centre is straight up">
+  const h = S.compassOn ? S.heading : 0;
+  const lbl = (x, y, t) => `<text class="lbl" x="${x}" y="${y}" transform="rotate(${h.toFixed(1)} ${x} ${y})">${t}</text>`;
+  const label = S.compassOn ? 'Sky chart turned to match your phone: the top is the way you are facing, the centre is straight up'
+    : 'Sky chart: north at the top, east to the right, the centre is straight up';
+  return `<svg class="dome" viewBox="-112 -112 224 224" role="img" aria-label="${label}">
     <defs><radialGradient id="${id}"><stop offset="0" style="stop-color:var(--dome-in)"/><stop offset="1" style="stop-color:var(--dome-out)"/></radialGradient></defs>
     <circle class="rim" r="100" fill="url(#${id})"/>
-    <circle class="ring" r="66.7"/><circle class="ring" r="33.3"/>
-    <text x="0" y="-89">N</text><text x="89" y="0">E</text><text x="0" y="89">S</text><text x="-89" y="0">W</text>
-    ${body}
+    <g class="sky" transform="rotate(${(-h).toFixed(1)})">
+      <circle class="ring" r="66.7"/><circle class="ring" r="33.3"/>
+      ${lbl(0, -89, 'N')}${lbl(89, 0, 'E')}${lbl(0, 89, 'S')}${lbl(-89, 0, 'W')}
+      ${body}
+    </g>
+    ${S.compassOn ? '<path class="facing" d="M0 -96 L-5.5 -107 L5.5 -107 Z"/>' : ''}
   </svg>`;
+}
+
+/* ---------- Compass ---------- */
+const hasCompass = typeof window.DeviceOrientationEvent !== 'undefined';
+const needsMotionPermission = hasCompass && typeof DeviceOrientationEvent.requestPermission === 'function';
+let compassEvt = null, raf = 0, compassWatch = 0;
+
+function heroDome(p, live) {
+  const btn = hasCompass ? `<button class="compass-btn" type="button" data-act="compass" aria-pressed="${S.compassOn}"
+    aria-label="${S.compassOn ? 'Stop turning the chart with the compass' : 'Turn the chart to match the way you are facing'}">${ICON.compass}</button>` : '';
+  const cap = S.compassOn ? `<p class="facing-txt" id="facing">${esc(facingTxt())}</p>` : '';
+  return `<div class="dome-wrap">${domeSvg(p, live)}${btn}${cap}</div>`;
+}
+
+function facingTxt() {
+  if (!S.lastOrient) return 'Finding north…';
+  if (!S.flat) return 'Hold your phone flat, screen up';
+  if (S.compassAcc != null && (S.compassAcc < 0 || S.compassAcc > 25)) return 'Compass unsure. Move your phone in a figure of eight.';
+  return `Facing ${O.compassWords(S.heading)}`;
+}
+
+function onOrient(e) {
+  let h = null, acc = null;
+  if (typeof e.webkitCompassHeading === 'number' && !isNaN(e.webkitCompassHeading)) {
+    h = e.webkitCompassHeading;           // iPhone: clockwise from magnetic north
+    acc = e.webkitCompassAccuracy;
+  } else if (e.absolute && typeof e.alpha === 'number') {
+    h = 360 - e.alpha;                    // Android: alpha runs anticlockwise from north
+  }
+  if (h == null) return;
+  const so = screen.orientation;
+  const ang = so && typeof so.angle === 'number' ? so.angle : (window.orientation || 0);
+  const tgt = (((h + ang) % 360) + 360) % 360;
+  if (!S.lastOrient) S.heading = tgt;
+  S.target = tgt;
+  S.compassAcc = acc;
+  S.flat = typeof e.beta !== 'number' || Math.abs(e.beta) < 60;
+  S.lastOrient = Date.now();
+}
+
+function applyHeading() {
+  const h = S.compassOn ? S.heading : 0;
+  document.querySelectorAll('.dome .sky').forEach((g) => g.setAttribute('transform', `rotate(${(-h).toFixed(1)})`));
+  document.querySelectorAll('.dome .lbl').forEach((t) =>
+    t.setAttribute('transform', `rotate(${h.toFixed(1)} ${t.getAttribute('x')} ${t.getAttribute('y')})`));
+  const f = document.getElementById('facing');
+  if (f) { const txt = facingTxt(); if (f.textContent !== txt) f.textContent = txt; }
+}
+
+function loop() {
+  raf = 0;
+  if (!S.compassOn) return;
+  if (S.target != null) {
+    const diff = ((S.target - S.heading + 540) % 360) - 180;   // shortest way round
+    if (Math.abs(diff) > 0.1) S.heading = (S.heading + diff * 0.18 + 360) % 360;
+  }
+  applyHeading();
+  raf = requestAnimationFrame(loop);
+}
+
+async function startCompass(fromTap) {
+  if (!hasCompass) return false;
+  if (needsMotionPermission) {
+    if (!fromTap) return false;           // iPhone only asks from a tap
+    try {
+      if ((await DeviceOrientationEvent.requestPermission()) !== 'granted') throw 0;
+    } catch {
+      toast('Overhead needs motion access for the compass. Allow it when asked.');
+      return false;
+    }
+  }
+  compassEvt = 'ondeviceorientationabsolute' in window ? 'deviceorientationabsolute' : 'deviceorientation';
+  window.addEventListener(compassEvt, onOrient);
+  Object.assign(S, { compassOn: true, lastOrient: 0, target: null, compassAcc: null, flat: true });
+  S.set.compass = true; saveSet();
+  render();
+  if (!raf) raf = requestAnimationFrame(loop);
+  clearTimeout(compassWatch);
+  compassWatch = setTimeout(() => {
+    if (S.compassOn && !S.lastOrient) {
+      stopCompass();
+      toast('This phone isn’t sharing a compass heading with Overhead.');
+    }
+  }, 3000);
+  return true;
+}
+
+function stopCompass() {
+  if (compassEvt) window.removeEventListener(compassEvt, onOrient);
+  compassEvt = null;
+  S.compassOn = false;
+  S.set.compass = false; saveSet();
+  if (raf) cancelAnimationFrame(raf);
+  raf = 0;
+  render();
+}
+
+/* ---------- Themes ---------- */
+function themeGridHtml() {
+  return `<div class="theme-grid">${THEMES.map((t) => `<button class="theme-opt" type="button" data-theme="${t.id}" aria-pressed="${S.set.theme === t.id}">
+      <span class="sw" style="--a:${t.bg};--c:${t.dome};--b:${t.accent}"></span>${t.name}</button>`).join('')}</div>
+    <p class="theme-note">Night red and Amber are gentlest on eyes adjusted to the dark.</p>`;
+}
+
+function setTheme(id) {
+  const t = THEMES.find((x) => x.id === id) || THEMES[0];
+  S.set.theme = t.id; saveSet();
+  if (t.id === 'twilight') delete document.documentElement.dataset.theme;
+  else document.documentElement.dataset.theme = t.id;
+  document.querySelector('meta[name=theme-color]').setAttribute('content', t.bg);
+  document.querySelectorAll('.theme-opt').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.theme === t.id)));
+}
+
+function toggleThemes(open) {
+  const pop = $('#themes');
+  const show = open == null ? pop.hidden : open;
+  if (show) pop.innerHTML = themeGridHtml();
+  pop.hidden = !show;
+  $('#themeBtn').setAttribute('aria-expanded', String(show));
 }
 
 /* ---------- Alerts (ntfy) ---------- */
@@ -562,7 +757,7 @@ async function toggleAlert(p, btn) {
       const seq = passKey(p);
       await publish(seq, p);
       const at = S.alerts[seq].alertMs;
-      toast(at - Date.now() < 30e3 ? 'Alert sent' : `Alert set for ${time(at)}`);
+      toast(at - Date.now() < 30e3 ? 'Alert sent to ntfy' : `Alert scheduled for ${whenTxt(at)}. It appears in ntfy then.`);
     }
   } catch {
     toast('Couldn’t reach ntfy. Check your connection and try again.');
@@ -574,13 +769,15 @@ async function toggleAlert(p, btn) {
 
 // ntfy is the source of truth: read back what is scheduled for this topic
 async function syncAlerts() {
-  if (!S.topic || !S.connected) return;
+  if (!S.topic || !S.connected) return false;
   let text;
   try {
     const r = await fetch(`${NTFY}/${S.topic}/json?poll=1&sched=1`, { cache: 'no-store' });
-    if (!r.ok) return;
+    if (!r.ok) throw new Error('ntfy ' + r.status);
     text = await r.text();
-  } catch { return; }
+  } catch { S.syncOk = false; return false; }
+  S.syncOk = true;
+  S.syncedAt = Date.now();
   const seen = {};
   for (const line of text.split('\n')) {
     if (!line.trim()) continue;
@@ -609,6 +806,7 @@ async function syncAlerts() {
     }
   }
   render();
+  return true;
 }
 
 async function sendTest() {
@@ -667,7 +865,7 @@ function bellHtml(p, extra = '') {
 function renderHero() {
   const el = $('#hero');
   if (!S.loc) {
-    el.innerHTML = domeSvg(null) + `
+    el.innerHTML = heroDome(null) + `
       <h1 class="empty-title">Where are you?</h1>
       <p class="empty-body">Overhead works out which satellites pass over your exact spot. Your location stays on this phone.</p>
       <div class="actions"><button class="btn primary" type="button" data-act="locate">Use my location</button>
@@ -675,11 +873,11 @@ function renderHero() {
     return;
   }
   if (S.loading) {
-    el.innerHTML = domeSvg(null) + `<h1 class="empty-title">Fetching orbits</h1><p class="empty-body">This takes a moment the first time.</p>`;
+    el.innerHTML = heroDome(null) + `<h1 class="empty-title">Fetching orbits</h1><p class="empty-body">This takes a moment the first time.</p>`;
     return;
   }
   if (!Object.keys(S.recs).length) {
-    el.innerHTML = domeSvg(null) + `<h1 class="empty-title">No orbit data yet</h1>
+    el.innerHTML = heroDome(null) + `<h1 class="empty-title">No orbit data yet</h1>
       <p class="empty-body">Overhead couldn’t reach the orbit service. Check your connection and try again.</p>
       <div class="actions"><button class="btn primary" type="button" data-act="retry">Try again</button></div>`;
     return;
@@ -688,7 +886,7 @@ function renderHero() {
   const p = list[0];
   if (!p) {
     const vis = S.set.mode === 'visible';
-    el.innerHTML = domeSvg(null) + `<h1 class="empty-title">${vis ? 'No visible passes in the next three days' : 'No passes in the next three days'}</h1>
+    el.innerHTML = heroDome(null) + `<h1 class="empty-title">${vis ? 'No visible passes in the next three days' : 'No passes in the next three days'}</h1>
       <p class="empty-body">${vis ? 'Switch to All passes to see ones in daylight or Earth’s shadow, or lower the minimum height in Settings.' : 'Try lowering the minimum height in Settings or adding more satellites.'}</p>`;
     return;
   }
@@ -703,7 +901,7 @@ function renderHero() {
     const dayTxt = /^(Today|Tomorrow)$/.test(dw) ? dw.toLowerCase() : dw;
     when = `<strong data-until="${w.start}">${esc(until(w.start).replace(/^in/, 'In'))}</strong>, ${esc(dayTxt)} at ${time(w.start)}`;
   }
-  el.innerHTML = domeSvg(p, live) + `
+  el.innerHTML = heroDome(p, live) + `
     <div class="title-row"><div><h1 class="sat-name">${esc(p.name)}</h1><p class="when num">${when}</p></div>${bellHtml(p)}</div>
     <p class="story">${esc(story(p))}</p>
     <p class="facts">${esc(facts(p))}</p>`;
@@ -795,7 +993,7 @@ function openConnect(p) {
     <li><strong>Install ntfy</strong>A free notification app. No account needed.<br><a class="btn" href="${isIOS ? APPSTORE : 'https://ntfy.sh'}" target="_blank" rel="noopener">Get ntfy</a></li>
     <li><strong>Copy your alert code</strong><button class="btn" type="button" data-act="copy">Copy code</button><br><span class="code">${esc(topic)}</span></li>
     <li><strong>Subscribe in ntfy</strong>Tap +, paste the code as the topic and tap Subscribe.</li>`;
-  openSheet(head('Get pass alerts') + `<p>Overhead sends a nudge through ntfy ${S.set.lead} minutes before each pass you choose.</p>
+  openSheet(head('Get pass alerts') + `<p>Overhead sends a nudge through ntfy ${S.set.lead} minutes before each pass you choose. Alerts wait on ntfy’s server and appear in the ntfy app at that time.</p>
     <ol class="steps">${steps}</ol>
     <div class="actions"><button class="btn primary" type="button" data-act="connected">Done</button><button class="btn" type="button" data-act="test">Send test alert</button></div>`);
 }
@@ -805,14 +1003,40 @@ function satListHtml() {
     <button class="mini" type="button" data-remove="${esc(s.id)}">Remove</button></li>`).join('');
 }
 
+function upcomingHtml() {
+  const now = Date.now();
+  const rows = Object.entries(S.alerts).filter(([, a]) => a.startMs > now - 10 * MIN).sort((a, b) => a[1].alertMs - b[1].alertMs);
+  if (!rows.length) return `<li><span class="small">No alerts yet. Tap the bell on any pass.</span></li>`;
+  return rows.map(([seq, a]) => {
+    const name = (S.recs[a.satId] && S.recs[a.satId].name) || friendly(a.satId, `Catalogue ${a.satId}`);
+    const sent = a.alertMs <= now;
+    const line = sent ? `Sent at ${time(a.alertMs)}, pass at ${time(a.startMs)}` : `Nudge at ${whenTxt(a.alertMs)}, pass at ${time(a.startMs)}`;
+    return `<li><span>${esc(name)}<small class="num">${esc(line)}</small></span>
+      ${sent ? '' : `<button class="mini" type="button" data-unalert="${esc(seq)}">Remove</button>`}</li>`;
+  }).join('');
+}
+function alertStatusTxt() {
+  if (S.syncOk === null) return 'Checking with ntfy…';
+  if (S.syncOk) return `Waiting on ntfy’s server, checked at ${time(S.syncedAt)}. Each one appears in the ntfy app at its nudge time.`;
+  return 'Couldn’t reach ntfy, so this is the list saved on this phone.';
+}
+function refreshAlertList() {
+  const l = $('#alertList'); if (l) l.innerHTML = upcomingHtml();
+  const s = $('#alertStatus'); if (s) s.textContent = alertStatusTxt();
+}
+
 function openSettings(focus) {
   const lead = S.set.lead, mp = S.set.minPeak;
-  const alertsBlock = S.connected && S.topic ? `<p>Alerts go to ntfy on this phone.</p>
+  const connected = S.connected && S.topic;
+  const alertsBlock = connected ? `<h3>Upcoming alerts</h3>
+      <p class="small" id="alertStatus">${esc(alertStatusTxt())}</p>
+      <ul class="list" id="alertList">${upcomingHtml()}</ul>
       <div class="actions"><button class="btn" type="button" data-act="test">Send test alert</button><button class="btn" type="button" data-act="setup">Setup steps</button></div>`
-    : `<p>Get a nudge before the passes you choose.</p><div class="actions"><button class="btn primary" type="button" data-act="setup">Set up alerts</button></div>`;
+    : `<h3>Alerts</h3><p>Get a nudge before the passes you choose.</p><div class="actions"><button class="btn primary" type="button" data-act="setup">Set up alerts</button></div>`;
   const age = oldestData();
+  if (connected) syncAlerts().then(refreshAlertList);
   openSheet(head('Settings') + `
-    <h3>Alerts</h3>${alertsBlock}
+    ${alertsBlock}
     <p class="small" style="margin-top:16px">Remind me this long before a pass</p>
     <div class="chips" role="group" aria-label="Reminder time">${[5, 10, 15].map((m) => `<button class="chip" type="button" data-lead="${m}" aria-pressed="${lead === m}">${m} min</button>`).join('')}</div>
 
@@ -831,9 +1055,11 @@ function openSettings(focus) {
     <form class="field-row" id="locForm"><input class="field num" id="latIn" inputmode="decimal" placeholder="Latitude, e.g. 51.43" aria-label="Latitude" value="${S.loc ? S.loc.lat.toFixed(4) : ''}">
       <input class="field num" id="lonIn" inputmode="decimal" placeholder="Longitude, e.g. -0.33" aria-label="Longitude" value="${S.loc ? S.loc.lon.toFixed(4) : ''}"><button class="btn" type="submit">Save</button></form>
 
-    <h3>Display</h3>
-    <div class="toggle-row"><p>Night vision<br><span class="small">Dim red to keep your eyes adjusted to the dark</span></p>
-      <button class="switch" type="button" role="switch" data-act="night" aria-checked="${!!S.set.night}" aria-label="Night vision"></button></div>
+    <h3>Colour theme</h3>
+    ${themeGridHtml()}
+    ${hasCompass ? `<h3>Compass</h3>
+    <div class="toggle-row"><p>Turn the sky chart with your phone<br><span class="small">Hold the phone flat and the top of the chart points the way you’re facing</span></p>
+      <button class="switch" type="button" role="switch" data-act="compass" aria-checked="${S.compassOn}" aria-label="Turn the sky chart with your phone"></button></div>` : ''}
 
     <h3>Orbit data</h3>
     <p id="dataAge">${age ? `Updated ${ago(age)}.` : 'Not downloaded yet.'}</p>
@@ -867,9 +1093,19 @@ async function searchSats(q) {
 
 /* ---------- Events ---------- */
 document.addEventListener('click', async (e) => {
+  if (!$('#themes').hidden && !e.target.closest('#themes, #themeBtn')) toggleThemes(false);
   const t = e.target.closest('button, a');
   if (!t) return;
   const d = t.dataset;
+
+  if (d.theme) { setTheme(d.theme); return; }
+  if (d.unalert) {
+    t.disabled = true;
+    try { await cancel(d.unalert); toast('Alert removed'); }
+    catch { toast('Couldn’t reach ntfy. Check your connection and try again.'); t.disabled = false; return; }
+    refreshAlertList(); render();
+    return;
+  }
 
   if (d.bell) { const p = findPass(d.bell); if (p) toggleAlert(p, t); return; }
   if (d.open) { S.open = S.open === d.open ? null : d.open; renderList(); return; }
@@ -926,7 +1162,10 @@ document.addEventListener('click', async (e) => {
       if (pendingPass) { const p = pendingPass; pendingPass = null; const fresh = findPass(passKey(p)) || p; toggleAlert(fresh, null); }
       else toast('Alerts are ready');
       break;
-    case 'night': setNight(!S.set.night); t.setAttribute('aria-checked', String(!!S.set.night)); break;
+    case 'compass':
+      if (S.compassOn) stopCompass(); else await startCompass(true);
+      document.querySelectorAll('.switch[data-act=compass]').forEach((b) => b.setAttribute('aria-checked', String(S.compassOn)));
+      break;
   }
 });
 
@@ -945,14 +1184,8 @@ document.addEventListener('submit', (e) => {
 
 $('#settingsBtn').addEventListener('click', () => openSettings());
 $('#where').addEventListener('click', () => openSettings('location'));
-$('#nightBtn').addEventListener('click', () => setNight(!S.set.night));
-
-function setNight(on) {
-  S.set.night = on; saveSet();
-  document.documentElement.toggleAttribute('data-night', on);
-  $('#nightBtn').setAttribute('aria-pressed', String(on));
-  document.querySelector('meta[name=theme-color]').setAttribute('content', on ? '#0C0404' : '#0F1528');
-}
+$('#themeBtn').addEventListener('click', () => toggleThemes());
+document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && !$('#themes').hidden) { toggleThemes(false); $('#themeBtn').focus(); } });
 
 async function resyncLead() {
   // re-time any pending alerts to the new reminder lead
@@ -994,7 +1227,8 @@ document.addEventListener('visibilitychange', () => {
     S.connected = true; put('connected', true);
     history.replaceState(null, '', location.pathname + location.search);
   }
-  setNight(!!S.set.night);
+  setTheme(S.set.theme);
+  saveSet();
   buildRecs();
   compute();
   refreshElements(false).then(syncAlerts);
@@ -1003,6 +1237,8 @@ document.addEventListener('visibilitychange', () => {
       if (st.state === 'granted' && Date.now() - (S.loc.at || 0) > 6 * 3600e3) askLocation(true);
     }).catch(() => {});
   }
+  // Android can resume the compass on open; iPhone needs a tap each session
+  if (S.set.compass) { if (needsMotionPermission) { S.set.compass = false; saveSet(); } else startCompass(false); }
   if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(() => {});
 })();
 })();
