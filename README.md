@@ -31,6 +31,7 @@ Edit and redeploy. Phones pick up the new version the next time they open the ap
 | --- | --- |
 | `index.html` | The app: layout, styles and behaviour |
 | `core.js` | Orbit maths: SGP4, Sun position, pass search, brightness |
+| `extras-worker.js` | Works out bright-satellite and recent-launch passes in the background |
 | `sw.js` | Offline support and updates |
 | `manifest.webmanifest`, icons | Install to home screen |
 
@@ -38,5 +39,7 @@ Edit and redeploy. Phones pick up the new version the next time they open the ap
 
 - Location never leaves the phone. Orbit data comes from CelesTrak, with a backup source if it's unreachable.
 - ntfy holds scheduled alerts for up to 3 days ahead, which covers the window the app shows.
-- Brightness estimates are shown for the ISS and Tiangong only. Other satellites you add show times and directions.
+- Brightness estimates are shown for the ISS, Tiangong and Hubble only. Other satellites show times and directions.
+- Settings → Satellites has a Popular list, search by name or catalogue number, and two optional extras: Bright satellites (CelesTrak's brightest objects) and Recent launches (including Starlink trains). Extras appear under Also passing.
+- Android: if the installed app plays a sound and shows "Tap to copy the URL for this app" each time it opens, long-press that notification and turn off Chrome's Full screen site controls category.
 - Low-orbit satellites only. High orbits (GPS, geostationary) show in search but can't be added, because they don't make passes.
