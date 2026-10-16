@@ -205,12 +205,27 @@ dialog.sheet::backdrop { background: rgba(4, 6, 14, .62); }
 .switch[aria-checked="true"] { background: var(--sun); }
 .switch[aria-checked="true"]::after { transform: translateX(20px); background: var(--on-sun); }
 
-/* Theme picker */
+/* Popovers: theme picker and upcoming alerts */
 .wrap { position: relative; }
-.themes { position: absolute; top: 64px; right: 12px; z-index: 5; width: min(300px, calc(100% - 24px)); padding: 16px 12px 12px; border-radius: 18px;
-  background: var(--raise); border: 1px solid var(--line-2); box-shadow: 0 18px 40px rgba(0, 0, 0, .45); animation: drop .18s ease-out; }
-.themes[hidden] { display: none; }
-@keyframes drop { from { opacity: 0; transform: translateY(-6px); } }
+.pop { position: absolute; top: 64px; right: 12px; z-index: 5; width: min(300px, calc(100% - 24px)); padding: 16px 12px 12px; border-radius: 18px;
+  background: var(--raise); border: 1px solid var(--line-2); box-shadow: 0 18px 40px rgba(0, 0, 0, .45); animation: drop .18s ease-out; transform-origin: top right; }
+.pop[hidden] { display: none; }
+@keyframes drop { from { opacity: 0; transform: translateY(-6px) scale(.98); } }
+#alertsPop { width: min(340px, calc(100% - 24px)); max-height: min(70vh, 520px); overflow: auto; overscroll-behavior: contain; padding: 18px 16px 12px; }
+.pop-title { margin: 0; font-size: 17px; font-weight: 600; letter-spacing: -.01em; }
+.pop-note { margin: 4px 0 6px; font-size: 13px; line-height: 1.45; color: var(--ink-3); }
+.pop .list li { min-height: 56px; }
+.pop .list li span small { margin-top: 2px; }
+.pop .list li:last-child { border-bottom: 0; }
+.pop-foot { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-top: 6px; padding-top: 10px; border-top: 1px solid var(--line); }
+.pop .actions { margin-top: 12px; }
+.pop-foot .small { font-size: 12.5px; color: var(--ink-3); }
+.pop-foot .link-btn { font-size: 13.5px; }
+.pop .list li span small { display: block; color: var(--ink-3); font-size: 12.5px; }
+.icon-btn { position: relative; }
+.badge { position: absolute; top: 6px; right: 5px; min-width: 17px; height: 17px; padding: 0 4px; border-radius: 9px; background: var(--sun); color: var(--on-sun);
+  font-size: 10.5px; font-weight: 600; line-height: 17px; text-align: center; box-shadow: 0 0 0 2px var(--bg); }
+.badge[hidden] { display: none; }
 .theme-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px 6px; }
 .theme-opt { display: grid; justify-items: center; gap: 6px; padding: 4px 0; font-size: 12.5px; color: var(--ink-2); }
 .theme-opt[aria-pressed="true"] { color: var(--ink); }
@@ -264,12 +279,17 @@ dialog.sheet::backdrop { background: rgba(4, 6, 14, .62); }
       <button class="icon-btn" id="themeBtn" type="button" aria-expanded="false" aria-haspopup="true" aria-controls="themes" aria-label="Colour theme">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M2.5 12s3.5-6 9.5-6 9.5 6 9.5 6-3.5 6-9.5 6-9.5-6-9.5-6Z"/><circle cx="12" cy="12" r="2.6" fill="currentColor" stroke="none"/></svg>
       </button>
+      <button class="icon-btn" id="alertsBtn" type="button" aria-expanded="false" aria-haspopup="true" aria-controls="alertsPop" aria-label="Upcoming alerts">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M6 10a6 6 0 1 1 12 0c0 4.5 1.5 6 2 7H4c.5-1 2-2.5 2-7Z"/><path d="M10 20a2.2 2.2 0 0 0 4 0"/></svg>
+        <span class="badge num" id="alertBadge" hidden></span>
+      </button>
       <button class="icon-btn" id="settingsBtn" type="button" aria-label="Settings">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M4 7h10M18 7h2M4 17h2M10 17h10"/><circle cx="16" cy="7" r="2"/><circle cx="8" cy="17" r="2"/></svg>
       </button>
     </div>
   </header>
-  <div class="themes" id="themes" hidden role="group" aria-label="Colour theme"></div>
+  <div class="pop" id="themes" hidden role="group" aria-label="Colour theme"></div>
+  <div class="pop" id="alertsPop" hidden role="dialog" aria-label="Upcoming alerts"></div>
   <div id="notices"></div>
   <main>
     <section class="hero" id="hero" aria-live="polite"></section>
@@ -703,7 +723,9 @@ function stopCompass() {
 // Hold the phone up like a camera. The view shows the sky where the back of the phone points:
 // horizon, the pass track and the satellite. Bring the satellite into the centre ring.
 const AIM = { on: false, pass: null, rec: null, obs: null, path: [], raw: null, X: null, Y: null, Z: null,
-  iosOffset: null, needFlat: false, lastEvt: 0, openedAt: 0, hit: false, wake: null, evt: null, raf: 0, col: {}, textAt: 0 };
+  iosOffset: null, needFlat: false, lastEvt: 0, openedAt: 0, hit: false, wake: null, evt: null, raf: 0, col: {}, textAt: 0,
+  half: 40, zoomAt: 0, pointers: new Map(), pinch: null, lastTap: 0, hint: false };
+const AIM_HALF = 40, AIM_MIN = 12, AIM_MAX = 72;   // half the view across the short side, in degrees
 const DEG2 = Math.PI / 180;
 const dot3 = (a, b) => a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
 const norm3 = (a) => { const l = Math.hypot(a[0], a[1], a[2]) || 1; return [a[0] / l, a[1] / l, a[2] / l]; };
@@ -757,8 +779,11 @@ async function openAim(p) {
   Object.assign(AIM, {
     on: true, pass: p, rec: S.recs[p.satId], obs: obs(), path: pathFor(p), raw: null, X: null, Y: null, Z: null,
     needFlat: false, lastEvt: 0, openedAt: Date.now(), hit: false, textAt: 0,
+    half: S.set.aimHalf || AIM_HALF, zoomAt: 0, pinch: null, hint: (S.set.aimOpens || 0) < 3,
     col: { bg: v('--bg'), ink: v('--ink'), ink2: v('--ink-2'), ink3: v('--ink-3'), sun: v('--sun'), soft: v('--sun-soft'), font: getComputedStyle(document.body).fontFamily },
   });
+  AIM.pointers.clear();
+  S.set.aimOpens = (S.set.aimOpens || 0) + 1; saveSet();
   AIM.evt = 'ondeviceorientationabsolute' in window ? 'deviceorientationabsolute' : 'deviceorientation';
   window.addEventListener(AIM.evt, onAimOrient);
   $('#aimName').textContent = p.name;
@@ -821,7 +846,7 @@ function drawAim() {
   ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
   ctx.fillStyle = C.bg; ctx.fillRect(0, 0, W, H);
   const cx = W / 2, cy = H * 0.46;
-  const f = (Math.min(W, H) / 2) / Math.tan(40 * DEG2);    // about 80° across the short side
+  const f = (Math.min(W, H) / 2) / Math.tan(AIM.half * DEG2);    // 80° across the short side by default; pinch to change
   const now = Date.now(), tgt = aimTarget(now);
   const ready = !!AIM.X;
   const proj = (az, el) => {
@@ -904,8 +929,64 @@ function drawAim() {
   ctx.moveTo(cx, cy - 40); ctx.lineTo(cx, cy - 32); ctx.moveTo(cx, cy + 32); ctx.lineTo(cx, cy + 40); ctx.stroke();
   ctx.globalAlpha = 1;
 
+  // brief zoom readout while pinching
+  const za = now - AIM.zoomAt;
+  if (za < 1400) {
+    ctx.globalAlpha = za < 900 ? 1 : 1 - (za - 900) / 500;
+    const label = `${Math.round(AIM.half * 2)}° view`;
+    ctx.font = `500 14px ${C.font}`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    const tw = ctx.measureText(label).width + 28, ty = cy - 84;
+    ctx.fillStyle = C.soft; ctx.beginPath(); ctx.roundRect ? ctx.roundRect(cx - tw / 2, ty - 15, tw, 30, 15) : ctx.rect(cx - tw / 2, ty - 15, tw, 30); ctx.fill();
+    ctx.fillStyle = C.ink; ctx.fillText(label, cx, ty);
+    ctx.globalAlpha = 1;
+  }
+
   if (now - AIM.textAt > 250) { AIM.textAt = now; aimText(tgt, point, hit, now); }
 }
+
+// Pinch to zoom the view in and out, double-tap to reset. The level is remembered.
+function setAimHalf(h) {
+  AIM.half = Math.max(AIM_MIN, Math.min(AIM_MAX, h));
+  AIM.zoomAt = Date.now();
+  AIM.hint = false;
+}
+function saveAimZoom() { S.set.aimHalf = Math.round(AIM.half * 10) / 10; saveSet(); }
+(function aimGestures() {
+  const el = $('#aim'), P = AIM.pointers;
+  const spread = () => { const [a, b] = [...P.values()]; return Math.hypot(a.x - b.x, a.y - b.y); };
+  el.addEventListener('pointerdown', (e) => {
+    if (e.target.closest('button')) return;
+    P.set(e.pointerId, { x: e.clientX, y: e.clientY, x0: e.clientX, y0: e.clientY, t0: Date.now(), pinched: false });
+    if (P.size === 2) {
+      AIM.pinch = { d: spread(), half: AIM.half };
+      P.forEach((q) => { q.pinched = true; });   // fingers used for a pinch never count as taps
+      AIM.lastTap = 0;
+    }
+  });
+  el.addEventListener('pointermove', (e) => {
+    const p = P.get(e.pointerId); if (!p) return;
+    p.x = e.clientX; p.y = e.clientY;
+    if (P.size === 2 && AIM.pinch) {
+      // spreading fingers zooms in: the scene grows with the spread
+      const s = spread() / Math.max(1, AIM.pinch.d);
+      setAimHalf(Math.atan(Math.tan(AIM.pinch.half * DEG2) / s) / DEG2);
+    }
+  });
+  const end = (e) => {
+    const p = P.get(e.pointerId); if (!p) return;
+    P.delete(e.pointerId);
+    if (AIM.pinch && P.size < 2) { AIM.pinch = null; saveAimZoom(); }
+    if (p.pinched) return;
+    const tap = Date.now() - p.t0 < 250 && Math.hypot(p.x - p.x0, p.y - p.y0) < 12;
+    if (tap && P.size === 0) {
+      if (Date.now() - AIM.lastTap < 320) { setAimHalf(AIM_HALF); saveAimZoom(); AIM.lastTap = 0; }
+      else AIM.lastTap = Date.now();
+    }
+  };
+  el.addEventListener('pointerup', end);
+  el.addEventListener('pointercancel', end);
+  el.addEventListener('wheel', (e) => { e.preventDefault(); setAimHalf(AIM.half * (1 + e.deltaY * 0.0015)); saveAimZoom(); }, { passive: false });
+})();
 
 function aimText(tgt, point, hit, now) {
   let status;
@@ -923,6 +1004,7 @@ function aimText(tgt, point, hit, now) {
     const pEl = Math.asin(point[2]) / DEG2;
     let pAz = Math.atan2(point[0], point[1]) / DEG2; if (pAz < 0) pAz += 360;
     pt = pEl < -5 ? `Pointing at the ground, ${O.compassWords(pAz)}` : `Pointing ${O.compassWords(pAz)}, ${r0(Math.max(0, pEl))}° up`;
+    if (AIM.hint && now - AIM.openedAt < 8000) pt += '. Pinch to zoom';
     if (tgt.kind === 'over') guide = 'Pick another pass to aim at';
     else if (hit) guide = tgt.kind === 'live' ? 'On target. Look along the phone' : 'On target. Wait here';
     else if (pEl < -25) guide = 'Raise your phone and point it at the sky';
@@ -956,14 +1038,6 @@ function setTheme(id) {
   else document.documentElement.dataset.theme = t.id;
   document.querySelector('meta[name=theme-color]').setAttribute('content', t.bg);
   document.querySelectorAll('.theme-opt').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.theme === t.id)));
-}
-
-function toggleThemes(open) {
-  const pop = $('#themes');
-  const show = open == null ? pop.hidden : open;
-  if (show) pop.innerHTML = themeGridHtml();
-  pop.hidden = !show;
-  $('#themeBtn').setAttribute('aria-expanded', String(show));
 }
 
 /* ---------- Alerts (ntfy) ---------- */
@@ -1231,6 +1305,8 @@ function render() {
   renderHero();
   renderSwitch();
   renderList();
+  updateBadge();
+  const l = $('#alertList'); if (l && !$('#alertsPop').hidden) l.innerHTML = upcomingHtml();
 }
 
 function findPass(k) { return S.passes.find((p) => passKey(p) === k); }
@@ -1287,24 +1363,56 @@ function upcomingHtml() {
 }
 function alertStatusTxt() {
   if (S.syncOk === null) return 'Checking with ntfy…';
-  if (S.syncOk) return `Waiting on ntfy’s server, checked at ${time(S.syncedAt)}. Each one appears in the ntfy app at its nudge time.`;
+  if (S.syncOk) return `Waiting on ntfy, checked at ${time(S.syncedAt)}. Each one appears in the ntfy app at its nudge time.`;
   return 'Couldn’t reach ntfy, so this is the list saved on this phone.';
+}
+const pendingCount = () => { const now = Date.now(); return Object.values(S.alerts).filter((a) => a.alertMs > now && a.startMs > now).length; };
+function updateBadge() {
+  const n = S.connected ? pendingCount() : 0, b = $('#alertBadge');
+  b.hidden = !n;
+  b.textContent = n > 9 ? '9+' : String(n);
+  $('#alertsBtn').setAttribute('aria-label', n ? `Upcoming alerts, ${n} set` : 'Upcoming alerts');
 }
 function refreshAlertList() {
   const l = $('#alertList'); if (l) l.innerHTML = upcomingHtml();
   const s = $('#alertStatus'); if (s) s.textContent = alertStatusTxt();
+  updateBadge();
 }
+
+function alertsPopHtml() {
+  if (!(S.connected && S.topic)) {
+    return `<h2 class="pop-title">Upcoming alerts</h2>
+      <p class="pop-note">Get a nudge before the passes you choose. Connect ntfy once, then tap the bell on any pass.</p>
+      <div class="actions"><button class="btn primary" type="button" data-act="setup">Set up alerts</button></div>`;
+  }
+  return `<h2 class="pop-title">Upcoming alerts</h2>
+    <p class="pop-note" id="alertStatus">${esc(alertStatusTxt())}</p>
+    <ul class="list" id="alertList">${upcomingHtml()}</ul>
+    <div class="pop-foot"><button class="link-btn" type="button" data-act="test">Send test alert</button><span class="small">${S.set.lead} min before each pass</span></div>`;
+}
+
+const POPS = { themes: '#themeBtn', alertsPop: '#alertsBtn' };
+function togglePop(id, open) {
+  const pop = $('#' + id);
+  const show = open == null ? pop.hidden : open;
+  for (const other in POPS) if (other !== id && !$('#' + other).hidden) togglePop(other, false);
+  if (show) {
+    pop.innerHTML = id === 'themes' ? themeGridHtml() : alertsPopHtml();
+    if (id === 'alertsPop' && S.connected && S.topic) syncAlerts().then(refreshAlertList);
+  }
+  pop.hidden = !show;
+  $(POPS[id]).setAttribute('aria-expanded', String(show));
+}
+function closePops() { for (const id in POPS) if (!$('#' + id).hidden) togglePop(id, false); }
 
 function openSettings(focus) {
   const lead = S.set.lead, mp = S.set.minPeak;
   const connected = S.connected && S.topic;
-  const alertsBlock = connected ? `<h3>Upcoming alerts</h3>
-      <p class="small" id="alertStatus">${esc(alertStatusTxt())}</p>
-      <ul class="list" id="alertList">${upcomingHtml()}</ul>
+  const alertsBlock = connected ? `<h3>Alerts</h3>
+      <p>Alerts go to ntfy on this phone. Your queued alerts are under the bell at the top.</p>
       <div class="actions"><button class="btn" type="button" data-act="test">Send test alert</button><button class="btn" type="button" data-act="setup">Setup steps</button></div>`
     : `<h3>Alerts</h3><p>Get a nudge before the passes you choose.</p><div class="actions"><button class="btn primary" type="button" data-act="setup">Set up alerts</button></div>`;
   const age = oldestData();
-  if (connected) syncAlerts().then(refreshAlertList);
   openSheet(head('Settings') + `
     ${alertsBlock}
     <p class="small" style="margin-top:16px">Remind me this long before a pass</p>
@@ -1363,7 +1471,7 @@ async function searchSats(q) {
 
 /* ---------- Events ---------- */
 document.addEventListener('click', async (e) => {
-  if (!$('#themes').hidden && !e.target.closest('#themes, #themeBtn')) toggleThemes(false);
+  if (!e.target.closest('.pop, #themeBtn, #alertsBtn')) closePops();
   const t = e.target.closest('button, a');
   if (!t) return;
   const d = t.dataset;
@@ -1423,7 +1531,7 @@ document.addEventListener('click', async (e) => {
     case 'install':
       if (S.installEvt) { S.installEvt.prompt(); S.installEvt = null; renderNotices(); }
       break;
-    case 'setup': openConnect(); break;
+    case 'setup': closePops(); openConnect(); break;
     case 'copy':
       try { await navigator.clipboard.writeText(S.topic); toast('Code copied'); }
       catch { toast('Press and hold the code to copy it'); }
@@ -1456,8 +1564,12 @@ document.addEventListener('submit', (e) => {
 
 $('#settingsBtn').addEventListener('click', () => openSettings());
 $('#where').addEventListener('click', () => openSettings('location'));
-$('#themeBtn').addEventListener('click', () => toggleThemes());
-document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && !$('#themes').hidden) { toggleThemes(false); $('#themeBtn').focus(); } });
+$('#themeBtn').addEventListener('click', () => togglePop('themes'));
+$('#alertsBtn').addEventListener('click', () => togglePop('alertsPop'));
+document.addEventListener('keydown', (e) => {
+  if (e.key !== 'Escape') return;
+  for (const id in POPS) if (!$('#' + id).hidden) { togglePop(id, false); $(POPS[id]).focus(); }
+});
 
 async function resyncLead() {
   // re-time any pending alerts to the new reminder lead
