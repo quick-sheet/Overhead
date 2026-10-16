@@ -1,5 +1,5 @@
 /* Overhead service worker: works offline, picks up updates on the next open. */
-const CACHE = 'overhead-v2';
+const CACHE = 'overhead-v3';
 const SHELL = ['./', 'index.html', 'core.js', 'manifest.webmanifest', 'icon.svg', 'icon-192.png', 'icon-512.png', 'apple-touch-icon.png'];
 
 self.addEventListener('install', (e) => {

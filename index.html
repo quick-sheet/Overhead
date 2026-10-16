@@ -15,7 +15,7 @@
 <meta name="apple-mobile-web-app-title" content="Overhead">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;500;600&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@300;400;500;600&display=swap">
 <style>
 :root {
   --bg: #0F1528;
@@ -124,7 +124,7 @@ header { display: flex; align-items: center; justify-content: space-between; pad
 .sat-name { margin: 0; font-size: 26px; line-height: 1.15; font-weight: 600; letter-spacing: -.015em; }
 .when { margin: 4px 0 0; font-size: 15px; color: var(--ink-2); }
 .when strong { color: var(--ink); font-weight: 500; }
-.story { margin: 14px 0 0; font-size: 18px; line-height: 1.5; color: var(--ink); max-width: 30em; }
+.story { margin: 14px 0 0; font-size: 18px; font-weight: 300; line-height: 1.55; letter-spacing: .005em; color: var(--ink); max-width: 30em; }
 .facts { margin: 10px 0 0; font-size: 14px; color: var(--ink-2); }
 .empty-title { margin: 0; font-size: 22px; font-weight: 600; letter-spacing: -.01em; }
 .empty-body { margin: 8px 0 0; color: var(--ink-2); max-width: 28em; }
@@ -228,6 +228,21 @@ dialog.sheet::backdrop { background: rgba(4, 6, 14, .62); }
 .facing-txt { margin: 10px 0 0; text-align: center; font-size: 13.5px; color: var(--ink-2); min-height: 1.2em; }
 .dome .facing { fill: var(--sun); }
 
+/* Aiming mode */
+.btn svg { width: 18px; height: 18px; flex: none; }
+.aim { position: fixed; inset: 0; z-index: 20; background: var(--bg); color: var(--ink); touch-action: none; }
+.aim[hidden] { display: none; }
+.aim canvas { position: absolute; inset: 0; width: 100%; height: 100%; }
+.aim-top { position: absolute; top: 0; left: 0; right: 0; padding: calc(10px + env(safe-area-inset-top)) 20px 30px 12px; display: flex; align-items: center; gap: 6px;
+  background: linear-gradient(var(--bg) 62%, transparent); }
+.aim-name { font-size: 20px; font-weight: 600; letter-spacing: -.01em; }
+.aim-status { font-size: 14px; color: var(--ink-2); }
+.aim-bottom { position: absolute; left: 0; right: 0; bottom: 0; padding: 40px 20px calc(26px + env(safe-area-inset-bottom)); text-align: center;
+  background: linear-gradient(transparent, var(--bg) 45%); }
+.aim-guide { margin: 0; font-size: 22px; font-weight: 500; letter-spacing: -.01em; min-height: 1.3em; }
+.aim-guide.hit { color: var(--sun); }
+.aim-point { margin: 6px 0 0; font-size: 13.5px; color: var(--ink-3); min-height: 1.3em; }
+
 /* Toast */
 .toast { position: fixed; left: 50%; bottom: calc(24px + env(safe-area-inset-bottom)); transform: translate(-50%, 20px); opacity: 0; pointer-events: none;
   background: var(--ink); color: var(--bg); padding: 10px 18px; border-radius: 22px; font-size: 14px; font-weight: 500; transition: opacity .2s, transform .2s; max-width: calc(100% - 40px); text-align: center; z-index: 10; }
@@ -264,6 +279,16 @@ dialog.sheet::backdrop { background: rgba(4, 6, 14, .62); }
   <p class="foot">Orbits from <a href="https://celestrak.org" target="_blank" rel="noopener">CelesTrak</a>. Alerts by <a href="https://ntfy.sh" target="_blank" rel="noopener">ntfy</a>. Times are for your location and may drift a little for passes more than a day away.</p>
 </div>
 
+<div class="aim" id="aim" hidden role="dialog" aria-modal="true" aria-labelledby="aimName">
+  <canvas id="aimCanvas" aria-hidden="true"></canvas>
+  <div class="aim-top">
+    <button class="icon-btn" type="button" data-act="aim-close" aria-label="Close">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M6 6l12 12M18 6 6 18"/></svg>
+    </button>
+    <div><div class="aim-name" id="aimName"></div><div class="aim-status num" id="aimStatus"></div></div>
+  </div>
+  <div class="aim-bottom"><p class="aim-guide" id="aimGuide"></p><p class="aim-point num" id="aimPoint"></p></div>
+</div>
 <dialog class="sheet" id="sheet" aria-labelledby="sheetTitle"><div class="sheet-in" id="sheetBody"></div></dialog>
 <div class="toast" id="toast" role="status"></div>
 
@@ -397,6 +422,7 @@ const ICON = {
   bellOn: '<svg class="on" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M6 10a6 6 0 1 1 12 0c0 4.5 1.5 6 2 7H4c.5-1 2-2.5 2-7Z"/><path d="M10 20a2.2 2.2 0 0 0 4 0" fill="none"/></svg>',
   x: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M6 6l12 12M18 6 6 18"/></svg>',
   compass: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 5.5 14.2 12h-4.4Z" fill="currentColor"/><path d="M9.8 12h4.4L12 18.5Z"/></svg>',
+  aim: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><circle cx="12" cy="12" r="6.5"/><path d="M12 2.5v4M12 17.5v4M2.5 12h4M17.5 12h4"/><circle cx="12" cy="12" r="1.2" fill="currentColor" stroke="none"/></svg>',
 };
 
 /* ---------- Orbit data ---------- */
@@ -673,6 +699,249 @@ function stopCompass() {
   render();
 }
 
+/* ---------- Aiming mode ---------- */
+// Hold the phone up like a camera. The view shows the sky where the back of the phone points:
+// horizon, the pass track and the satellite. Bring the satellite into the centre ring.
+const AIM = { on: false, pass: null, rec: null, obs: null, path: [], raw: null, X: null, Y: null, Z: null,
+  iosOffset: null, needFlat: false, lastEvt: 0, openedAt: 0, hit: false, wake: null, evt: null, raf: 0, col: {}, textAt: 0 };
+const DEG2 = Math.PI / 180;
+const dot3 = (a, b) => a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
+const norm3 = (a) => { const l = Math.hypot(a[0], a[1], a[2]) || 1; return [a[0] / l, a[1] / l, a[2] / l]; };
+const cross3 = (a, b) => [a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0]];
+const skyVec = (az, el) => [Math.sin(az * DEG2) * Math.cos(el * DEG2), Math.cos(az * DEG2) * Math.cos(el * DEG2), Math.sin(el * DEG2)];
+const blendAngle = (a, b, k) => (a + (((b - a + 540) % 360) - 180) * k + 360) % 360;
+
+// Device axes (x right, y up, z out of the screen) expressed in East-North-Up, per the
+// DeviceOrientation spec: R = Rz(alpha) Rx(beta) Ry(gamma)
+function deviceAxes(a, b, g) {
+  const cA = Math.cos(a * DEG2), sA = Math.sin(a * DEG2), cB = Math.cos(b * DEG2), sB = Math.sin(b * DEG2), cG = Math.cos(g * DEG2), sG = Math.sin(g * DEG2);
+  let X = [cA * cG - sA * sB * sG, sA * cG + cA * sB * sG, -cB * sG];
+  let Y = [-sA * cB, cA * cB, sB];
+  const Z = [cA * sG + sA * sB * cG, sA * sG - cA * sB * cG, cB * cG];
+  const so = screen.orientation;
+  const ang = (so && typeof so.angle === 'number' ? so.angle : (window.orientation || 0)) * DEG2;
+  if (ang) {   // screen rotated: re-aim the on-screen right/up axes
+    const c = Math.cos(ang), s = Math.sin(ang);
+    const Xs = [0, 1, 2].map((i) => X[i] * c - Y[i] * s), Ys = [0, 1, 2].map((i) => X[i] * s + Y[i] * c);
+    X = Xs; Y = Ys;
+  }
+  return { X, Y, Z };
+}
+
+function onAimOrient(e) {
+  if (typeof e.alpha !== 'number' || typeof e.beta !== 'number' || typeof e.gamma !== 'number') return;
+  let alpha = e.alpha;
+  if (typeof e.webkitCompassHeading === 'number' && !isNaN(e.webkitCompassHeading)) {
+    // iPhone: alpha has no fixed north, so learn the offset while the phone is fairly flat
+    if (Math.abs(e.beta) < 50 && Math.abs(e.gamma) < 50) {
+      const off = ((360 - e.webkitCompassHeading - e.alpha) % 360 + 360) % 360;
+      AIM.iosOffset = AIM.iosOffset == null ? off : blendAngle(AIM.iosOffset, off, 0.08);
+    }
+    if (AIM.iosOffset == null) { AIM.needFlat = true; AIM.lastEvt = Date.now(); return; }
+    AIM.needFlat = false;
+    alpha = e.alpha + AIM.iosOffset;
+  } else if (!e.absolute) {
+    return;   // no north reference
+  }
+  AIM.raw = deviceAxes(alpha, e.beta, e.gamma);
+  AIM.lastEvt = Date.now();
+}
+
+async function openAim(p) {
+  if (needsMotionPermission) {
+    try { if ((await DeviceOrientationEvent.requestPermission()) !== 'granted') throw 0; }
+    catch { toast('Overhead needs motion access to aim. Allow it when asked.'); return; }
+  }
+  const css = getComputedStyle(document.documentElement);
+  const v = (n) => css.getPropertyValue(n).trim();
+  Object.assign(AIM, {
+    on: true, pass: p, rec: S.recs[p.satId], obs: obs(), path: pathFor(p), raw: null, X: null, Y: null, Z: null,
+    needFlat: false, lastEvt: 0, openedAt: Date.now(), hit: false, textAt: 0,
+    col: { bg: v('--bg'), ink: v('--ink'), ink2: v('--ink-2'), ink3: v('--ink-3'), sun: v('--sun'), soft: v('--sun-soft'), font: getComputedStyle(document.body).fontFamily },
+  });
+  AIM.evt = 'ondeviceorientationabsolute' in window ? 'deviceorientationabsolute' : 'deviceorientation';
+  window.addEventListener(AIM.evt, onAimOrient);
+  $('#aimName').textContent = p.name;
+  $('#aim').hidden = false;
+  document.body.style.overflow = 'hidden';
+  sizeAim();
+  history.pushState({ aim: 1 }, '');
+  keepAwake();
+  if (!AIM.raf) AIM.raf = requestAnimationFrame(aimLoop);
+}
+
+function closeAim() {
+  if (!AIM.on) return;
+  AIM.on = false;
+  window.removeEventListener(AIM.evt, onAimOrient);
+  if (AIM.raf) cancelAnimationFrame(AIM.raf);
+  AIM.raf = 0;
+  $('#aim').hidden = true;
+  document.body.style.overflow = '';
+  if (AIM.wake) { AIM.wake.release().catch(() => {}); AIM.wake = null; }
+}
+
+async function keepAwake() {
+  try { if (navigator.wakeLock && AIM.on) AIM.wake = await navigator.wakeLock.request('screen'); } catch {}
+}
+
+function sizeAim() {
+  const cv = $('#aimCanvas'), dpr = window.devicePixelRatio || 1;
+  cv.width = Math.round(innerWidth * dpr); cv.height = Math.round(innerHeight * dpr);
+}
+window.addEventListener('resize', () => { if (AIM.on) sizeAim(); });
+window.addEventListener('popstate', () => { if (AIM.on) closeAim(); });
+
+function aimTarget(now) {
+  const p = AIM.pass, w = p.visible || p.all;
+  if (now < w.start) return { kind: 'soon', az: w.startAz, el: w.startEl, t: w.start };
+  const s = now <= p.all.end + 2 * MIN ? O.state(AIM.rec, AIM.obs, now) : null;
+  if (s && s.el > 0) return { kind: 'live', az: s.az, el: s.el };
+  return { kind: 'over', az: p.all.endAz, el: p.all.endEl };
+}
+
+function aimLoop() {
+  AIM.raf = AIM.on ? requestAnimationFrame(aimLoop) : 0;
+  if (!AIM.on) return;
+  if (AIM.raw) {
+    // ease small movements, snap on big jumps so the view never swirls through a flip
+    if (!AIM.Z || dot3(AIM.raw.Z, AIM.Z) < 0.5 || dot3(AIM.raw.Y, AIM.Y) < 0.5) { AIM.Y = AIM.raw.Y.slice(); AIM.Z = AIM.raw.Z.slice(); }
+    else for (let i = 0; i < 3; i++) { AIM.Y[i] += (AIM.raw.Y[i] - AIM.Y[i]) * 0.25; AIM.Z[i] += (AIM.raw.Z[i] - AIM.Z[i]) * 0.25; }
+    // keep the smoothed axes square to each other
+    const Z = norm3(AIM.Z), Yd = dot3(AIM.Y, Z);
+    const Y = norm3([AIM.Y[0] - Yd * Z[0], AIM.Y[1] - Yd * Z[1], AIM.Y[2] - Yd * Z[2]]);
+    AIM.Z = Z; AIM.Y = Y; AIM.X = cross3(Y, Z);
+  }
+  drawAim();
+}
+
+function drawAim() {
+  const cv = $('#aimCanvas'), ctx = cv.getContext('2d'), dpr = window.devicePixelRatio || 1;
+  const W = cv.width / dpr, H = cv.height / dpr, C = AIM.col;
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  ctx.fillStyle = C.bg; ctx.fillRect(0, 0, W, H);
+  const cx = W / 2, cy = H * 0.46;
+  const f = (Math.min(W, H) / 2) / Math.tan(40 * DEG2);    // about 80° across the short side
+  const now = Date.now(), tgt = aimTarget(now);
+  const ready = !!AIM.X;
+  const proj = (az, el) => {
+    const v = skyVec(az, el), dx = dot3(v, AIM.X), dy = dot3(v, AIM.Y), dz = dot3(v, AIM.Z);
+    return { front: dz < -0.05, x: cx + f * dx / -dz, y: cy - f * dy / -dz, dx, dy };
+  };
+  const onScreen = (p, m = 0) => p.front && p.x > -m && p.x < W + m && p.y > -m && p.y < H + m;
+
+  if (ready) {
+    // horizon
+    ctx.strokeStyle = C.ink3; ctx.lineWidth = 1.5; ctx.setLineDash([]); ctx.beginPath();
+    let pen = false;
+    for (let az = 0; az <= 360; az += 2) {
+      const p = proj(az, 0);
+      if (onScreen(p, W)) { pen ? ctx.lineTo(p.x, p.y) : ctx.moveTo(p.x, p.y); pen = true; } else pen = false;
+    }
+    ctx.stroke();
+    // compass points along the horizon, and the point straight overhead
+    ctx.fillStyle = C.ink2; ctx.font = `600 14px ${C.font}`; ctx.textAlign = 'center'; ctx.textBaseline = 'bottom';
+    for (let az = 0; az < 360; az += 45) { const p = proj(az, 2.5); if (onScreen(p)) ctx.fillText(O.compass(az), p.x, p.y); }
+    const z = proj(0, 90);
+    if (onScreen(z)) {
+      ctx.strokeStyle = C.ink3; ctx.beginPath(); ctx.moveTo(z.x - 7, z.y); ctx.lineTo(z.x + 7, z.y); ctx.moveTo(z.x, z.y - 7); ctx.lineTo(z.x, z.y + 7); ctx.stroke();
+      ctx.font = `400 12px ${C.font}`; ctx.fillStyle = C.ink3; ctx.textBaseline = 'top'; ctx.fillText('Straight up', z.x, z.y + 10);
+    }
+    // the pass track: gold where it's visible
+    ctx.lineCap = 'round';
+    for (let i = 1; i < AIM.path.length; i++) {
+      const a = AIM.path[i - 1], b = AIM.path[i], pa = proj(a.az, a.el), pb = proj(b.az, b.el);
+      if (!onScreen(pa, W) || !onScreen(pb, W)) continue;
+      const lit = a.vis && b.vis;
+      ctx.strokeStyle = lit ? C.sun : C.ink3; ctx.lineWidth = lit ? 4 : 1.5; ctx.setLineDash(lit ? [] : [3, 6]);
+      ctx.beginPath(); ctx.moveTo(pa.x, pa.y); ctx.lineTo(pb.x, pb.y); ctx.stroke();
+    }
+    ctx.setLineDash([]);
+    // the satellite, or where it will appear
+    const tp = proj(tgt.az, tgt.el);
+    if (onScreen(tp)) {
+      if (tgt.kind === 'live') {
+        ctx.fillStyle = C.soft; ctx.beginPath(); ctx.arc(tp.x, tp.y, 22, 0, 7); ctx.fill();
+        ctx.fillStyle = C.sun; ctx.beginPath(); ctx.arc(tp.x, tp.y, 8, 0, 7); ctx.fill();
+      } else {
+        ctx.strokeStyle = tgt.kind === 'soon' ? C.sun : C.ink3; ctx.lineWidth = 2.5;
+        ctx.beginPath(); ctx.arc(tp.x, tp.y, 10, 0, 7); ctx.stroke();
+        ctx.fillStyle = C.ink2; ctx.font = `500 13px ${C.font}`; ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
+        if (tgt.kind === 'soon' && Math.hypot(tp.x - cx, tp.y - cy) > 44) ctx.fillText(`Appears here at ${time(tgt.t)}`, tp.x + 18, tp.y);
+      }
+    }
+    // arrow at the edge when the target is out of view
+    const m = 34, bottom = H * 0.78;
+    if (!(tp.front && tp.x > m && tp.x < W - m && tp.y > m + 60 && tp.y < bottom - m)) {
+      let ux, uy;
+      if (tp.front) { ux = tp.x - cx; uy = tp.y - cy; }
+      else {
+        // behind you: point the way the words say, turn left or right first
+        const pt = [-AIM.Z[0], -AIM.Z[1], -AIM.Z[2]];
+        const pAz = (Math.atan2(pt[0], pt[1]) / DEG2 + 360) % 360, pEl = Math.asin(pt[2]) / DEG2;
+        const dAz = ((tgt.az - pAz + 540) % 360) - 180;
+        ux = dAz >= 0 ? 1 : -1; uy = -Math.max(-0.5, Math.min(0.5, (tgt.el - pEl) / 90));
+      }
+      const l = Math.hypot(ux, uy) || 1; ux /= l; uy /= l;
+      const kx = ux > 0 ? (W - m - cx) / ux : ux < 0 ? (m - cx) / ux : Infinity;
+      const ky = uy > 0 ? (bottom - m - cy) / uy : uy < 0 ? (m + 60 - cy) / uy : Infinity;
+      const k = Math.min(kx, ky), ax = cx + ux * k, ay = cy + uy * k, ang = Math.atan2(uy, ux);
+      ctx.save(); ctx.translate(ax, ay); ctx.rotate(ang); ctx.fillStyle = C.sun;
+      ctx.beginPath(); ctx.moveTo(14, 0); ctx.lineTo(-8, -11); ctx.lineTo(-3, 0); ctx.lineTo(-8, 11); ctx.closePath(); ctx.fill(); ctx.restore();
+    }
+  }
+
+  // centre ring
+  const point = ready ? [-AIM.Z[0], -AIM.Z[1], -AIM.Z[2]] : null;
+  const sep = ready ? Math.acos(Math.max(-1, Math.min(1, dot3(point, skyVec(tgt.az, tgt.el))))) / DEG2 : 180;
+  const hit = ready && tgt.kind !== 'over' && sep < 4;
+  if (hit && !AIM.hit && navigator.vibrate) navigator.vibrate(30);
+  AIM.hit = hit ? true : (sep > 7 ? false : AIM.hit);
+  ctx.strokeStyle = hit ? C.sun : C.ink; ctx.lineWidth = 1.6; ctx.globalAlpha = ready ? 0.9 : 0.4;
+  if (hit) { ctx.fillStyle = C.soft; ctx.beginPath(); ctx.arc(cx, cy, 28, 0, 7); ctx.fill(); }
+  ctx.beginPath(); ctx.arc(cx, cy, 28, 0, 7); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(cx - 40, cy); ctx.lineTo(cx - 32, cy); ctx.moveTo(cx + 32, cy); ctx.lineTo(cx + 40, cy);
+  ctx.moveTo(cx, cy - 40); ctx.lineTo(cx, cy - 32); ctx.moveTo(cx, cy + 32); ctx.lineTo(cx, cy + 40); ctx.stroke();
+  ctx.globalAlpha = 1;
+
+  if (now - AIM.textAt > 250) { AIM.textAt = now; aimText(tgt, point, hit, now); }
+}
+
+function aimText(tgt, point, hit, now) {
+  let status;
+  if (tgt.kind === 'soon') {
+    const s = Math.max(0, Math.round((tgt.t - now) / 1000));
+    status = s < 600 ? `Appears in ${Math.floor(s / 60)} min ${String(s % 60).padStart(2, '0')} s, at ${time(tgt.t)}` : `Appears ${until(tgt.t)}, at ${time(tgt.t)}`;
+  } else if (tgt.kind === 'live') status = `Up now, ${r0(tgt.el)}° high in the ${O.compassWords(tgt.az)}`;
+  else status = 'This pass has ended';
+  let guide = '', pt = '';
+  if (!point) {
+    if (AIM.needFlat) guide = 'Hold your phone flat for a moment to find north';
+    else if (Date.now() - AIM.openedAt > 3000) guide = 'This phone isn’t sharing its direction with Overhead';
+    else guide = 'Finding north…';
+  } else {
+    const pEl = Math.asin(point[2]) / DEG2;
+    let pAz = Math.atan2(point[0], point[1]) / DEG2; if (pAz < 0) pAz += 360;
+    pt = pEl < -5 ? `Pointing at the ground, ${O.compassWords(pAz)}` : `Pointing ${O.compassWords(pAz)}, ${r0(Math.max(0, pEl))}° up`;
+    if (tgt.kind === 'over') guide = 'Pick another pass to aim at';
+    else if (hit) guide = tgt.kind === 'live' ? 'On target. Look along the phone' : 'On target. Wait here';
+    else if (pEl < -25) guide = 'Raise your phone and point it at the sky';
+    else if (pEl > 75) guide = `Lower your phone towards the ${O.compassWords(tgt.az)}`;
+    else {
+      const dAz = ((tgt.az - pAz + 540) % 360) - 180, dEl = tgt.el - pEl, bits = [];
+      if (Math.abs(dAz) >= 3) bits.push(`turn ${dAz > 0 ? 'right' : 'left'} ${r0(Math.abs(dAz))}°`);
+      if (Math.abs(dEl) >= 3) bits.push(`tilt ${dEl > 0 ? 'up' : 'down'} ${r0(Math.abs(dEl))}°`);
+      guide = bits.length ? bits.join(', ') : 'Almost there';
+      guide = guide.charAt(0).toUpperCase() + guide.slice(1);
+    }
+  }
+  const g = $('#aimGuide');
+  if (g.textContent !== guide) g.textContent = guide;
+  g.classList.toggle('hit', hit);
+  $('#aimStatus').textContent = status;
+  $('#aimPoint').textContent = pt;
+}
+
 /* ---------- Themes ---------- */
 function themeGridHtml() {
   return `<div class="theme-grid">${THEMES.map((t) => `<button class="theme-opt" type="button" data-theme="${t.id}" aria-pressed="${S.set.theme === t.id}">
@@ -904,7 +1173,8 @@ function renderHero() {
   el.innerHTML = heroDome(p, live) + `
     <div class="title-row"><div><h1 class="sat-name">${esc(p.name)}</h1><p class="when num">${when}</p></div>${bellHtml(p)}</div>
     <p class="story">${esc(story(p))}</p>
-    <p class="facts">${esc(facts(p))}</p>`;
+    <p class="facts">${esc(facts(p))}</p>
+    ${hasCompass ? `<div class="actions"><button class="btn" type="button" data-aim="${esc(passKey(p))}">${ICON.aim}Find in sky</button></div>` : ''}`;
   el.dataset.key = passKey(p);
   el.dataset.live = liveNow ? '1' : '';
 }
@@ -934,7 +1204,7 @@ function renderList() {
         </button>${bellHtml(p)}
       </div>
       ${open ? `<div class="pass-detail">${domeSvg(p)}<p class="story">${esc(story(p))}</p><p class="facts">${esc(facts(p))}</p>
-        <div class="actions"><button class="btn" type="button" data-cal="${esc(k)}">Add to calendar</button></div></div>` : ''}
+        <div class="actions">${hasCompass ? `<button class="btn" type="button" data-aim="${esc(k)}">${ICON.aim}Find in sky</button>` : ''}<button class="btn" type="button" data-cal="${esc(k)}">Add to calendar</button></div></div>` : ''}
     </div>`;
   }
   el.innerHTML = html;
@@ -1099,6 +1369,7 @@ document.addEventListener('click', async (e) => {
   const d = t.dataset;
 
   if (d.theme) { setTheme(d.theme); return; }
+  if (d.aim) { const p = findPass(d.aim); if (p) openAim(p); return; }
   if (d.unalert) {
     t.disabled = true;
     try { await cancel(d.unalert); toast('Alert removed'); }
@@ -1136,6 +1407,7 @@ document.addEventListener('click', async (e) => {
 
   switch (d.act) {
     case 'close': closeSheet(); break;
+    case 'aim-close': if (history.state && history.state.aim) history.back(); else closeAim(); break;
     case 'locate': askLocation(false); break;
     case 'manual': openSettings('location'); break;
     case 'retry': refreshElements(true); break;
@@ -1214,6 +1486,7 @@ setInterval(() => {
 
 document.addEventListener('visibilitychange', () => {
   if (document.visibilityState !== 'visible') return;
+  if (AIM.on) keepAwake();
   if (Date.now() - S.computedAt > 5 * MIN) compute();
   refreshElements(false);
   syncAlerts();
